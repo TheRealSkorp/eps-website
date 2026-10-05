@@ -1,0 +1,9 @@
+# never commit secrets
+.admin-password
+.env
+# noise
+node_modules/
+*.log
+*.tmp
+.DS_Store
+Thumbs.db

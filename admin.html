@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>EPS Admin</title>
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#06307d;--blue-l:#1b57c4;--ice:#eef4fc;--line:#d3deef;--ink:#0b1b3a;--muted:#5a6b8c;--red:#d9344a;--green:#0f8a5f}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Barlow,system-ui,sans-serif;background:var(--ice);color:var(--ink);min-height:100vh}
+h1,h2{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:.02em}
+.wrap{width:min(1000px,100% - 24px);margin:0 auto;padding:20px 0 80px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.top h1{font-size:34px;color:var(--blue);display:flex;align-items:center;gap:10px}
+.top img{height:42px}
+button,.btn{font:inherit;font-weight:600;border:0;border-radius:8px;padding:9px 16px;cursor:pointer;background:var(--blue);color:#fff}
+button:hover{background:var(--blue-l)}
+button.sec{background:#fff;color:var(--blue);border:1px solid var(--line)}
+button.sec:hover{background:var(--ice)}
+button.del{background:#fff;color:var(--red);border:1px solid var(--line);padding:7px 11px}
+button.del:hover{background:#fdecef}
+.tabs{display:flex;gap:6px;margin-bottom:14px}
+.tabs button{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.tabs button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.card h2{font-size:24px;color:var(--blue);margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.row:last-of-type{border:0}
+input,select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);min-width:0}
+.logo-prev{width:52px;height:52px;border:1px dashed var(--line);border-radius:10px;display:grid;place-items:center;overflow:hidden;background:var(--ice);font-size:11px;color:var(--muted);flex:none}
+.logo-prev img{width:100%;height:100%;object-fit:contain}
+.file{position:relative;overflow:hidden}
+.file input{position:absolute;inset:0;opacity:0;cursor:pointer;font-size:0}
+input[type=number]{width:70px}
+input[type=text]{flex:1;min-width:140px}
+label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--muted)}
+.score{display:flex;align-items:center;gap:6px;font-weight:700}
+[hidden]{display:none!important}
+.gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+.gal-item{display:grid;gap:8px;align-content:start}
+.gal-item img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:var(--ice)}
+.gal-item input{width:100%}
+.mrow{padding:10px 0;border-bottom:1px solid var(--line)}
+.mrow:last-of-type{border:0}
+.bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);padding:12px;display:flex;justify-content:center;gap:12px;align-items:center;z-index:5}
+#msg{font-weight:600}
+#msg.ok{color:var(--green)}#msg.err{color:var(--red)}
+.login{max-width:360px;margin:12vh auto;padding:28px}
+.login input{width:100%;margin:12px 0}
+.login button{width:100%}
+.hint{color:var(--muted);font-size:14px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<div id="loginView" class="hidden">
+  <form class="card login" id="loginForm">
+    <h1 style="color:var(--blue);font-size:32px">EPS Admin</h1>
+    <input type="password" id="pw" placeholder="Admin password" autocomplete="current-password" autofocus>
+    <button>Log in</button>
+    <p id="loginErr" class="hint" style="color:var(--red);margin-top:10px"></p>
+  </form>
+</div>
+
+<div id="app" class="wrap hidden">
+  <div class="top">
+    <h1><img src="logo.png" alt="">Admin</h1>
+    <div style="display:flex;gap:8px"><a class="btn sec" href="/" style="text-decoration:none;background:#fff;color:var(--blue);border:1px solid var(--line)">View site</a><button class="sec" id="logout">Log out</button></div>
+  </div>
+  <div class="tabs" id="tabs">
+    <button data-t="teams" class="on">Teams</button>
+    <button data-t="matches">Matches</button>
+    <button data-t="players">Players</button>
+    <button data-t="staff">Staff</button>
+    <button data-t="gallery">Gallery</button>
+  </div>
+  <div id="panel"></div>
+</div>
+
+<div class="bar hidden" id="bar"><span id="msg"></span><button id="save">Save changes</button></div>
+
+<script>
+let data={teams:[],matches:[],players:[]}, tab='teams', dirty=false, pf='';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>crypto.randomUUID();
+const msg=(t,c='')=>{const m=$('#msg');m.textContent=t;m.className=c};
+const api=async(url,opt)=>{const r=await fetch(url,opt);const j=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(j.error||'Error'),{status:r.status});return j};
+
+async function init(){
+  const me=await api('/api/me').catch(()=>({}));
+  if(me.admin){await load();show(true)}else show(false);
+}
+function show(on){
+  $('#loginView').classList.toggle('hidden',on);
+  $('#app').classList.toggle('hidden',!on);
+  $('#bar').classList.toggle('hidden',!on);
+  if(on)render();
+}
+async function load(){
+  data=await api('/api/data');data.staff=data.staff||[];data.gallery=data.gallery||[];
+  // every match has exactly 3 game slots; the old single-score format becomes game 1
+  data.matches.forEach(m=>{
+    const g=Array.isArray(m.games)?m.games:(m.as!=null?[{as:m.as,bs:m.bs}]:[]);
+    m.games=[0,1,2].map(j=>({as:g[j]?.as??null,bs:g[j]?.bs??null}));
+    delete m.as;delete m.bs;delete m.ot;
+  });
+}
+const emptyGames=()=>[0,1,2].map(()=>({as:null,bs:null}));
+const gameWinner=g=>g.as==null||g.bs==null||g.as===g.bs?0:(g.as>g.bs?1:2);
+function seriesState(m){
+  let wa=0,wb=0;
+  for(let i=0;i<2;i++){const w=gameWinner(m.games[i]);if(w===1)wa++;if(w===2)wb++}
+  const needThird=wa===1&&wb===1;
+  if(needThird){const w=gameWinner(m.games[2]);if(w===1)wa++;if(w===2)wb++}
+  return {wa,wb,needThird,decided:wa>=2||wb>=2,started:wa+wb>0};
+}
+function resultText(m){
+  const s=seriesState(m),n=id=>esc((data.teams.find(t=>t.id===id)||{}).name||'?');
+  if(!s.started)return '';
+  if(!s.decided)return `In progress ${s.wa}:${s.wb}`;
+  const aw=s.wa>=2,lg=aw?s.wb:s.wa,w=lg===0?3:2,l=lg===0?0:1;
+  return `Series ${s.wa}:${s.wb}. ${n(m.a)} ${aw?w:l} pts, ${n(m.b)} ${aw?l:w} pts`;
+}
+function refreshMatch(i){
+  const m=data.matches[i],row=document.querySelector(`[data-row="${i}"]`);if(!row)return;
+  row.querySelector('.g2').hidden=!seriesState(m).needThird;
+  row.querySelector('.res').textContent=resultText(m);
+}
+
+$('#loginForm').onsubmit=async e=>{
+  e.preventDefault();$('#loginErr').textContent='';
+  try{await api('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('#pw').value})});
+    $('#pw').value='';await load();show(true)}
+  catch(err){$('#loginErr').textContent=err.message}
+};
+$('#logout').onclick=async()=>{await api('/api/logout',{method:'POST'});location.reload()};
+$('#tabs').onclick=e=>{const t=e.target.dataset.t;if(!t)return;tab=t;
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));render()};
+$('#save').onclick=async()=>{
+  msg('Saving…');
+  try{data=await api('/api/data',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});dirty=false;msg('Saved ✓','ok');render()}
+  catch(err){msg(err.status===401?'Session expired – log in again':err.message,'err');if(err.status===401)setTimeout(()=>location.reload(),1500)}
+};
+window.onbeforeunload=()=>dirty?'Unsaved changes':undefined;
+
+const teamOpts=sel=>data.teams.map(t=>`<option value="${esc(t.id)}"${t.id===sel?' selected':''}>${esc(t.name)}</option>`).join('');
+
+function render(){
+  const P=$('#panel');
+  if(tab==='teams'){
+    P.innerHTML=`<div class="card"><h2>Teams</h2>${data.teams.map((t,i)=>`
+      <div class="row"><div class="logo-prev">${t.logo?`<img src="${esc(t.logo)}" alt="">`:'No logo'}</div>
+      <div style="flex:1;min-width:260px;display:grid;gap:8px">
+        <input type="text" data-l="teams" data-i="${i}" data-k="name" value="${esc(t.name)}" placeholder="Team name" style="width:100%">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="text" data-l="teams" data-i="${i}" data-k="gm" value="${esc(t.gm)}" placeholder="GM" maxlength="40" style="flex:1;min-width:110px">
+          <input type="text" data-l="teams" data-i="${i}" data-k="am" value="${esc(t.am)}" placeholder="AM" maxlength="40" style="flex:1;min-width:110px">
+          <label class="chk">Roster colour <input type="color" data-l="teams" data-i="${i}" data-k="color" value="${esc(t.color||'#1b57c4')}"></label>
+        </div>
+      </div>
+      <button class="sec file">${t.logo?'Change logo':'Upload logo'}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-up="${i}"></button>${t.logo?`<button class="sec" data-rmlogo="${i}">Remove logo</button>`:''}
+      <button class="del" data-del="teams" data-i="${i}">Delete</button></div>`).join('')||'<p class="hint">No teams yet.</p>'}
+      <p style="margin-top:12px"><button data-add="teams">+ Add team</button></p>
+      <p class="hint" style="margin-top:10px">Logos: PNG, JPG, WEBP or GIF up to 8 MB, ideally square with a transparent background. Uploading takes effect after you press Save. GM and AM are shown at the top of the roster, and the colour is the bar on its left side.</p><p class="hint" style="margin-top:6px">Deleting a team also removes its matches and players.</p></div>`;
+  }
+  if(tab==='matches'){
+    P.innerHTML=`<div class="card"><h2>Matches</h2>${data.teams.length<2?'<p class="hint">Add at least 2 teams first.</p>':''}
+      ${data.matches.map((m,i)=>`
+      <div class="mrow" data-row="${i}">
+        <div class="row" style="border:0;padding-bottom:4px"><input type="datetime-local" data-l="matches" data-i="${i}" data-k="date" value="${esc(m.date)}">
+        <select data-l="matches" data-i="${i}" data-k="a">${teamOpts(m.a)}</select><span class="hint">vs</span>
+        <select data-l="matches" data-i="${i}" data-k="b">${teamOpts(m.b)}</select>
+        <button class="del" data-del="matches" data-i="${i}" style="margin-left:auto">Delete</button></div>
+        <div class="row" style="border:0;padding-top:4px">
+        ${[0,1,2].map(g=>`<span class="score g${g}" ${g===2&&!seriesState(m).needThird?'hidden':''}><span class="hint">Game ${g+1}</span>
+          <input type="number" min="0" data-l="matches" data-i="${i}" data-g="${g}" data-k="as" data-n value="${m.games[g].as??''}" placeholder="0"> :
+          <input type="number" min="0" data-l="matches" data-i="${i}" data-g="${g}" data-k="bs" data-n value="${m.games[g].bs??''}" placeholder="0"></span>`).join('')}
+        <strong class="res" style="margin-left:auto">${resultText(m)}</strong></div>
+      </div>`).join('')||'<p class="hint">No matches yet.</p>'}
+      <p style="margin-top:12px"><button data-add="matches" ${data.teams.length<2?'disabled':''}>+ Add match</button></p>
+      <p class="hint" style="margin-top:10px">A match is a series: enter the score of Game 1 and Game 2 (team on the left first). Game 3 only appears if it is 1:1. The series result and points are worked out for you. Leave scores empty for matches not played yet.</p></div>`;
+  }
+  if(tab==='gallery'){
+    P.innerHTML=`<div class="card"><h2>Gallery</h2>
+      <p style="margin-bottom:14px"><button class="file">Upload photos<input type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif" data-gal></button></p>
+      <div class="gal-grid">${data.gallery.map((g,i)=>`
+        <div class="gal-item"><img src="${esc(g.photo)}" alt="" loading="lazy">
+          <input type="text" data-l="gallery" data-i="${i}" data-k="caption" maxlength="140" value="${esc(g.caption)}" placeholder="Caption (optional)">
+          <button class="del" data-del="gallery" data-i="${i}">Delete</button></div>`).join('')||'<p class="hint">No photos yet.</p>'}</div>
+      <p class="hint" style="margin-top:14px">Only logged-in admins can add photos. Pick several at once (PNG, JPG, WEBP or GIF, up to 8 MB each). New photos are shown first on the site. Press Save changes to publish.</p></div>`;
+  }
+  if(tab==='staff'){
+    P.innerHTML=`<div class="card"><h2>Staff</h2>${data.staff.map((s,i)=>`
+      <div class="row"><div class="logo-prev" style="border-radius:50%">${s.photo?`<img src="${esc(s.photo)}" alt="" style="object-fit:cover">`:'No photo'}</div>
+      <div style="flex:1;min-width:240px;display:grid;gap:8px">
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><input type="text" data-l="staff" data-i="${i}" data-k="name" value="${esc(s.name)}" placeholder="Name">
+        <input type="text" list="roles" style="flex:0 1 200px" data-l="staff" data-i="${i}" data-k="role" value="${esc(s.role)}" placeholder="Role"></div>
+        <input type="text" data-l="staff" data-i="${i}" data-k="bio" maxlength="240" value="${esc(s.bio)}" placeholder="Short description (optional)" style="width:100%">
+      </div>
+      <button class="sec file">${s.photo?'Change photo':'Upload photo'}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-up="${i}" data-upl="staff"></button>${s.photo?`<button class="sec" data-rmphoto="${i}">Remove photo</button>`:''}
+      <button class="del" data-del="staff" data-i="${i}">Delete</button></div>`).join('')||'<p class="hint">No staff yet.</p>'}
+      <datalist id="roles"><option value="Founder"><option value="Owner"><option value="Admin"><option value="Moderator"><option value="Broadcaster"><option value="Technical Team"></datalist>
+      <p style="margin-top:12px"><button data-add="staff">+ Add person</button></p>
+      <p class="hint" style="margin-top:10px">Shown on the site grouped by role: Founder and Owner first, then Admin, Moderator, then any other role you type. Photos: PNG, JPG, WEBP or GIF up to 2 MB, square works best.</p></div>`;
+  }
+  if(tab==='players'){
+    P.innerHTML=`<div class="card"><h2>Players</h2>${data.teams.length<1?'<p class="hint">Add a team first.</p>':''}
+      <p style="margin-bottom:8px"><select data-pf><option value="">All teams</option>${teamOpts(pf)}</select></p>
+      ${data.players.map((p,i)=>pf&&p.team!==pf?'':`
+      <div class="row"><input type="number" min="0" max="999" style="width:64px" data-l="players" data-i="${i}" data-k="number" value="${esc(p.number)}" placeholder="#" title="Jersey number">
+      <input type="text" data-l="players" data-i="${i}" data-k="name" value="${esc(p.name)}" placeholder="Player name">
+      <select data-l="players" data-i="${i}" data-k="tag" title="Club role"><option value="">No tag</option><option value="GM"${p.tag==='GM'?' selected':''}>GM</option><option value="AM"${p.tag==='AM'?' selected':''}>AM</option></select>
+      <select data-l="players" data-i="${i}" data-k="team">${teamOpts(p.team)}</select>
+      <select data-l="players" data-i="${i}" data-k="role"><option value="skater"${p.role==='skater'?' selected':''}>Skater</option><option value="goalie"${p.role==='goalie'?' selected':''}>Goalie</option></select>
+      ${p.role==='goalie'
+        ?`<label class="chk">Saves <input type="number" min="0" data-l="players" data-i="${i}" data-k="saves" data-n value="${p.saves}"></label><label class="chk">Shots <input type="number" min="0" data-l="players" data-i="${i}" data-k="shots" data-n value="${p.shots}"></label>`
+        :`<label class="chk">Goals <input type="number" min="0" data-l="players" data-i="${i}" data-k="g" data-n value="${p.g}"></label><label class="chk">Assists <input type="number" min="0" data-l="players" data-i="${i}" data-k="a" data-n value="${p.a}"></label>`}
+      <button class="del" data-del="players" data-i="${i}">Delete</button></div>`).join('')||'<p class="hint">No players yet.</p>'}
+      <p style="margin-top:12px"><button data-add="players" ${data.teams.length<1?'disabled':''}>+ Add player</button></p>
+      <p class="hint" style="margin-top:10px">A team has 4 skaters + 1 goalkeeper. Goalies show save % (saves ÷ shots faced).</p></div>`;
+  }
+}
+
+$('#panel').addEventListener('input',e=>{
+  const el=e.target,l=el.dataset.l;if(!l)return;
+  const o=data[l][+el.dataset.i],k=el.dataset.k;
+  const val=el.type==='checkbox'?el.checked:el.hasAttribute('data-n')?(el.value===''?null:+el.value):el.value;
+  if(el.dataset.g!==undefined)o.games[+el.dataset.g][k]=val;else o[k]=val;
+  if(l==='matches')refreshMatch(+el.dataset.i);
+  if(l==='players'&&k==='role')render();
+  dirty=true;msg('Unsaved changes');
+});
+$('#panel').addEventListener('change',async e=>{
+  const el=e.target;
+  if(el.dataset.pf!==undefined){pf=el.value;render();return}
+  if(el.dataset.gal!==undefined){
+    const files=[...el.files].slice(0,20);if(!files.length)return;
+    let ok=0,fail=0;
+    for(const [n,f] of files.entries()){
+      msg(`Uploading ${n+1} of ${files.length}…`);
+      try{const r=await api('/api/upload',{method:'POST',headers:{'Content-Type':f.type||'application/octet-stream'},body:f});
+        data.gallery.unshift({id:uid(),photo:r.url,caption:''});ok++}
+      catch(err){fail++;msg(`${f.name}: ${err.message}`,'err')}
+    }
+    if(ok){dirty=true;msg(`${ok} photo${ok>1?'s':''} added${fail?`, ${fail} failed`:''}. Press Save to publish`)}
+    render();return;
+  }
+  if(el.dataset.up===undefined)return;
+  const f=el.files[0];if(!f)return;
+  msg('Uploading…');
+  try{const r=await api('/api/upload',{method:'POST',headers:{'Content-Type':f.type||'application/octet-stream'},body:f});
+    const staff=el.dataset.upl==='staff';
+    data[staff?'staff':'teams'][+el.dataset.up][staff?'photo':'logo']=r.url;dirty=true;msg('Image uploaded – press Save');render()}
+  catch(err){msg(err.message,'err')}
+});
+$('#panel').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.rmphoto!==undefined){data.staff[+b.dataset.rmphoto].photo='';dirty=true;msg('Unsaved changes');render();return}
+  if(b.dataset.rmlogo!==undefined){data.teams[+b.dataset.rmlogo].logo='';dirty=true;msg('Unsaved changes');render();return}
+  if(b.dataset.add){
+    const l=b.dataset.add,first=data.teams[0]?.id,second=data.teams[1]?.id;
+    if(l==='teams')data.teams.push({id:uid(),name:'New team',color:'#1b57c4',logo:'',gm:'',am:''});
+    if(l==='matches')data.matches.push({id:uid(),date:'',a:first,b:second,games:emptyGames()});
+    if(l==='staff')data.staff.push({id:uid(),name:'',role:'Moderator',bio:'',photo:''});
+    if(l==='players')data.players.push({id:uid(),name:'',team:pf||first,role:'skater',number:'',tag:'',g:0,a:0,saves:0,shots:0});
+  }else if(b.dataset.del){
+    const l=b.dataset.del,i=+b.dataset.i;
+    if(l==='teams'){
+      if(!confirm('Delete this team and all its matches and players?'))return;
+      const id=data.teams[i].id;data.teams.splice(i,1);
+      data.matches=data.matches.filter(m=>m.a!==id&&m.b!==id);data.players=data.players.filter(p=>p.team!==id);
+    }else data[l].splice(i,1);
+  }else return;
+  dirty=true;msg('Unsaved changes');render();
+});
+init();
+</script>
+</body>
+</html>

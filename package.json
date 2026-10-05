@@ -1,0 +1,14 @@
+{
+  "name": "eps-website",
+  "version": "1.0.0",
+  "description": "European Puck Series league website",
+  "private": true,
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "hash-password": "node hash-password.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
