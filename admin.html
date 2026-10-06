@@ -39,6 +39,10 @@ input[type=text]{flex:1;min-width:140px}
 label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--muted)}
 .score{display:flex;align-items:center;gap:6px;font-weight:700}
 [hidden]{display:none!important}
+button:disabled{opacity:.45;cursor:default}
+.round{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:14px 0;background:#fbfdff}
+.round-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.rname{font-weight:700;font-size:18px;flex:1;min-width:160px}
 .gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
 .gal-item{display:grid;gap:8px;align-content:start}
 .gal-item img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;border:1px solid var(--line);background:var(--ice)}
@@ -101,12 +105,13 @@ function show(on){
   if(on)render();
 }
 async function load(){
-  data=await api('/api/data');data.staff=data.staff||[];data.gallery=data.gallery||[];
+  data=await api('/api/data');data.staff=data.staff||[];data.gallery=data.gallery||[];data.rounds=data.rounds||[];
   // every match has exactly 3 game slots; the old single-score format becomes game 1
   data.matches.forEach(m=>{
     const g=Array.isArray(m.games)?m.games:(m.as!=null?[{as:m.as,bs:m.bs}]:[]);
     m.games=[0,1,2].map(j=>({as:g[j]?.as??null,bs:g[j]?.bs??null}));
     delete m.as;delete m.bs;delete m.ot;
+    m.round=m.round||'';
   });
 }
 const emptyGames=()=>[0,1,2].map(()=>({as:null,bs:null}));
@@ -168,21 +173,41 @@ function render(){
       <p class="hint" style="margin-top:10px">Logos: PNG, JPG, WEBP or GIF up to 8 MB, ideally square with a transparent background. Uploading takes effect after you press Save. GM and AM are shown at the top of the roster, and the colour is the bar on its left side.</p><p class="hint" style="margin-top:6px">Deleting a team also removes its matches and players.</p></div>`;
   }
   if(tab==='matches'){
-    P.innerHTML=`<div class="card"><h2>Matches</h2>${data.teams.length<2?'<p class="hint">Add at least 2 teams first.</p>':''}
-      ${data.matches.map((m,i)=>`
+    const few=data.teams.length<2;
+    const roundOpts=sel=>'<option value="">No round</option>'+data.rounds.map(r=>`<option value="${esc(r.id)}"${r.id===sel?' selected':''}>${esc(r.name)}</option>`).join('');
+    const matchRow=(m,i)=>`
       <div class="mrow" data-row="${i}">
         <div class="row" style="border:0;padding-bottom:4px"><input type="datetime-local" data-l="matches" data-i="${i}" data-k="date" value="${esc(m.date)}">
         <select data-l="matches" data-i="${i}" data-k="a">${teamOpts(m.a)}</select><span class="hint">vs</span>
         <select data-l="matches" data-i="${i}" data-k="b">${teamOpts(m.b)}</select>
+        ${data.rounds.length?`<select data-l="matches" data-i="${i}" data-k="round" title="Move to another round">${roundOpts(m.round)}</select>`:''}
         <button class="del" data-del="matches" data-i="${i}" style="margin-left:auto">Delete</button></div>
         <div class="row" style="border:0;padding-top:4px">
         ${[0,1,2].map(g=>`<span class="score g${g}" ${g===2&&!seriesState(m).needThird?'hidden':''}><span class="hint">Game ${g+1}</span>
           <input type="number" min="0" data-l="matches" data-i="${i}" data-g="${g}" data-k="as" data-n value="${m.games[g].as??''}" placeholder="0"> :
           <input type="number" min="0" data-l="matches" data-i="${i}" data-g="${g}" data-k="bs" data-n value="${m.games[g].bs??''}" placeholder="0"></span>`).join('')}
         <strong class="res" style="margin-left:auto">${resultText(m)}</strong></div>
-      </div>`).join('')||'<p class="hint">No matches yet.</p>'}
-      <p style="margin-top:12px"><button data-add="matches" ${data.teams.length<2?'disabled':''}>+ Add match</button></p>
-      <p class="hint" style="margin-top:10px">A match is a series: enter the score of Game 1 and Game 2 (team on the left first). Game 3 only appears if it is 1:1. The series result and points are worked out for you. Leave scores empty for matches not played yet.</p></div>`;
+      </div>`;
+    const pairs=data.matches.map((m,i)=>[m,i]);
+    const roundBlock=(r,idx)=>{
+      const list=pairs.filter(([m])=>m.round===r.id);
+      return `<div class="round">
+        <div class="round-head"><input type="text" class="rname" data-l="rounds" data-i="${idx}" data-k="name" value="${esc(r.name)}" maxlength="40" aria-label="Round name">
+          <button class="sec" data-rmove="${idx}" data-dir="-1" ${idx===0?'disabled':''}>Up</button>
+          <button class="sec" data-rmove="${idx}" data-dir="1" ${idx===data.rounds.length-1?'disabled':''}>Down</button>
+          <button class="del" data-delround="${idx}">Delete round</button></div>
+        ${list.map(([m,i])=>matchRow(m,i)).join('')||'<p class="hint" style="padding:10px 0">No matches in this round yet.</p>'}
+        <p style="margin:8px 0 2px"><button data-add="matches" data-round="${esc(r.id)}" ${few?'disabled':''}>+ Add match to this round</button></p></div>`;
+    };
+    const loose=pairs.filter(([m])=>!data.rounds.some(r=>r.id===m.round));
+    const looseBlock=(loose.length||!data.rounds.length)?`<div class="round">
+        <div class="round-head"><strong>${data.rounds.length?'Matches without a round':'All matches'}</strong></div>
+        ${loose.map(([m,i])=>matchRow(m,i)).join('')||'<p class="hint" style="padding:10px 0">No matches yet.</p>'}
+        <p style="margin:8px 0 2px"><button data-add="matches" data-round="" ${few?'disabled':''}>+ Add match</button></p></div>`:'';
+    P.innerHTML=`<div class="card"><h2>Matches</h2>${few?'<p class="hint">Add at least 2 teams first.</p>':''}
+      <p style="margin-bottom:6px"><button data-addround>+ Add round</button></p>
+      ${data.rounds.map(roundBlock).join('')}${looseBlock}
+      <p class="hint" style="margin-top:10px">Rounds group the matches on the site (Round 1, Quarterfinals, and so on) in the order shown here. Use Up and Down to reorder them, and the dropdown on a match to move it to another round. A match is a series: enter the score of Game 1 and Game 2 (team on the left first). Game 3 only appears if it is 1:1. The series result and points are worked out for you. Leave scores empty for matches not played yet.</p></div>`;
   }
   if(tab==='gallery'){
     P.innerHTML=`<div class="card"><h2>Gallery</h2>
@@ -237,6 +262,7 @@ $('#panel').addEventListener('input',e=>{
 $('#panel').addEventListener('change',async e=>{
   const el=e.target;
   if(el.dataset.pf!==undefined){pf=el.value;render();return}
+  if(el.dataset.l==='rounds'||(el.dataset.l==='matches'&&el.dataset.k==='round')){render();return}
   if(el.dataset.gal!==undefined){
     const files=[...el.files].slice(0,20);if(!files.length)return;
     let ok=0,fail=0;
@@ -259,12 +285,22 @@ $('#panel').addEventListener('change',async e=>{
 });
 $('#panel').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.addround!==undefined){data.rounds.push({id:uid(),name:'Round '+(data.rounds.length+1)});dirty=true;msg('Unsaved changes');render();return}
+  if(b.dataset.delround!==undefined){
+    const r=data.rounds[+b.dataset.delround];
+    if(!confirm('Delete "'+r.name+'"? Its matches are kept and moved to "Matches without a round".'))return;
+    data.matches.forEach(m=>{if(m.round===r.id)m.round=''});data.rounds.splice(+b.dataset.delround,1);
+    dirty=true;msg('Unsaved changes');render();return}
+  if(b.dataset.rmove!==undefined){
+    const i=+b.dataset.rmove,j=i+(+b.dataset.dir);
+    if(j>=0&&j<data.rounds.length){[data.rounds[i],data.rounds[j]]=[data.rounds[j],data.rounds[i]];dirty=true;msg('Unsaved changes');render()}
+    return}
   if(b.dataset.rmphoto!==undefined){data.staff[+b.dataset.rmphoto].photo='';dirty=true;msg('Unsaved changes');render();return}
   if(b.dataset.rmlogo!==undefined){data.teams[+b.dataset.rmlogo].logo='';dirty=true;msg('Unsaved changes');render();return}
   if(b.dataset.add){
     const l=b.dataset.add,first=data.teams[0]?.id,second=data.teams[1]?.id;
     if(l==='teams')data.teams.push({id:uid(),name:'New team',color:'#1b57c4',logo:'',gm:'',am:''});
-    if(l==='matches')data.matches.push({id:uid(),date:'',a:first,b:second,games:emptyGames()});
+    if(l==='matches')data.matches.push({id:uid(),date:'',round:b.dataset.round||'',a:first,b:second,games:emptyGames()});
     if(l==='staff')data.staff.push({id:uid(),name:'',role:'Moderator',bio:'',photo:''});
     if(l==='players')data.players.push({id:uid(),name:'',team:pf||first,role:'skater',number:'',tag:'',g:0,a:0,saves:0,shots:0});
   }else if(b.dataset.del){

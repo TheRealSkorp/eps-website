@@ -111,6 +111,12 @@ h2{font-size:clamp(40px,5.4vw,64px);font-weight:800;color:var(--ink);margin-bott
 .fx-games b{color:var(--ink)}
 .fx-state{font-family:var(--disp);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:15px;text-align:right;color:var(--muted)}
 
+/* Round selector */
+.rtabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
+.rtab{font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:.06em;text-transform:uppercase;padding:8px 18px;border-radius:var(--r);border:2px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;transition:background .2s,border-color .2s,color .2s}
+.rtab:hover{border-color:var(--accent);color:var(--ink)}
+.rtab[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+
 /* Standings */
 .tbl{overflow-x:auto}
 table{width:100%;border-collapse:collapse;min-width:600px}
@@ -597,7 +603,30 @@ function render(D){
       <span class="fx-team r ${d&&!bw?"lose":""}">${esc(b.name)}${badge(b)}</span>
       <span class="fx-state">${status}</span>${detail}</div>`};
   const group=(title,list)=>list.length?`<div class="fx-group"><h3>${title}</h3><div class="card fx">${list.map(row).join("")}</div></div>`:"";
-  document.getElementById("matchList").innerHTML=(group("Upcoming and in progress",up)+group("Results",done))||'<div class="empty"><b>No matches yet</b>Fixtures appear here as soon as the first round is scheduled.</div>';
+  const emptyMsg='<div class="empty"><b>No matches yet</b>Fixtures appear here as soon as the first round is scheduled.</div>';
+  const matchList=document.getElementById("matchList");
+  const rounds=D.rounds||[];
+  if(!rounds.length){
+    matchList.innerHTML=(group("Upcoming and in progress",up)+group("Results",done))||emptyMsg;
+  }else{
+    // rounds in the order the admin set; rounds without matches are hidden
+    const known=new Set(rounds.map(r=>r.id)),byDate=(x,y)=>ts(x.m)-ts(y.m);
+    const groups=rounds.map(r=>({id:r.id,name:r.name,list:items.filter(x=>x.m.round===r.id).sort(byDate)})).filter(g=>g.list.length);
+    const loose=items.filter(x=>!known.has(x.m.round)).sort(byDate);
+    if(loose.length)groups.push({id:"_other",name:"Other matches",list:loose});
+    if(!groups.length){matchList.innerHTML=emptyMsg}
+    else{
+      // start on the current round: the first one that still has an unfinished match, else the last one
+      let sel=(groups.find(g=>g.list.some(x=>!x.st.decided))||groups[groups.length-1]).id;
+      const paint=()=>{
+        const shown=sel==="all"?groups:groups.filter(g=>g.id===sel);
+        const tabs=[{id:"all",name:"All rounds"},...groups].map(g=>`<button type="button" class="rtab" data-r="${esc(g.id)}" aria-pressed="${g.id===sel}">${esc(g.name)}</button>`).join("");
+        matchList.innerHTML=`<div class="rtabs" role="group" aria-label="Choose a round">${tabs}</div>`+shown.map(g=>group(esc(g.name),g.list)).join("");
+      };
+      matchList.onclick=ev=>{const b=ev.target.closest(".rtab");if(b){sel=b.dataset.r;paint()}};
+      paint();
+    }
+  }
 
   // teams
   document.getElementById("teamList").innerHTML=D.teams.map(t=>{

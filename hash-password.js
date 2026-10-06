@@ -17,7 +17,8 @@ function ask(question) {
       for (const c of ch) {
         if (c === '\r' || c === '\n') { stdin.setRawMode(false); stdin.pause(); stdin.removeListener('data', onData); process.stdout.write('\n'); return resolve(value); }
         if (c === '\u0003') { process.stdout.write('\n'); process.exit(1); }                // Ctrl+C
-        if (c === '\u007f' || c === '\b') value = value.slice(0, -1); else value += c;       // backspace
+        if (c === '\u007f' || c === '\b') { if (value) { value = value.slice(0, -1); process.stdout.write('\b \b'); } }   // backspace
+        else { value += c; process.stdout.write('*'); }
       }
     };
     stdin.on('data', onData);

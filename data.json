@@ -113,24 +113,56 @@
       "am": "pelko"
     }
   ],
+  "rounds": [
+    {
+      "id": "739bcf3f-1789-4ede-a3e8-142324469508",
+      "name": "Round 1"
+    },
+    {
+      "id": "6d6ef891-0c3d-4dc1-baae-c260cb788765",
+      "name": "Round 2"
+    }
+  ],
   "matches": [
     {
-      "id": "9b63d031-717b-4418-b810-a086f9e41fd3",
+      "id": "f00bca5e-c5a3-4044-97fb-ca4fca89285f",
       "date": "",
-      "a": "hc-great-victoria",
-      "b": "brno-supporters",
+      "a": "hc-gladiators",
+      "b": "hc-cockarna",
+      "round": "739bcf3f-1789-4ede-a3e8-142324469508",
       "games": [
-        {
-          "as": 5,
-          "bs": 1
-        },
         {
           "as": 4,
           "bs": 1
         },
         {
+          "as": 3,
+          "bs": 1
+        },
+        {
           "as": null,
           "bs": null
+        }
+      ]
+    },
+    {
+      "id": "303c36f3-506d-43b0-83ee-d4513ad182a9",
+      "date": "",
+      "a": "hc-gladiators",
+      "b": "hc-cockarna",
+      "round": "6d6ef891-0c3d-4dc1-baae-c260cb788765",
+      "games": [
+        {
+          "as": 3,
+          "bs": 1
+        },
+        {
+          "as": 2,
+          "bs": 3
+        },
+        {
+          "as": 3,
+          "bs": 1
         }
       ]
     }

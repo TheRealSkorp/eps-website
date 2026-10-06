@@ -164,9 +164,15 @@ function sanitize(d) {
     am: str(t.am, 40),
   }));
   const ids = new Set(teams.map(t => t.id));
-  const matches = (Array.isArray(d.matches) ? d.matches : []).slice(0, 2000).filter(m => ids.has(m.a) && ids.has(m.b) && m.a !== m.b).map(m => ({
+  const rounds = (Array.isArray(d.rounds) ? d.rounds : []).slice(0, 100).map(r => ({
+    id: str(r.id, 40) || crypto.randomUUID(),
+    name: str(r.name, 40) || 'Round',
+  }));
+  const roundIds = new Set(rounds.map(r => r.id));
+  const matches =(Array.isArray(d.matches) ? d.matches : []).slice(0, 2000).filter(m => ids.has(m.a) && ids.has(m.b) && m.a !== m.b).map(m => ({
     id: str(m.id, 40) || crypto.randomUUID(),
     date: str(m.date, 25), a: m.a, b: m.b,
+    round: roundIds.has(m.round) ? m.round : '',
     // up to 3 games, each with its own score; the old single-score format becomes game 1
     games: (Array.isArray(m.games) ? m.games : (m.as != null && m.bs != null ? [{ as: m.as, bs: m.bs }] : []))
       .slice(0, 3).map(g => ({ as: score(g && g.as), bs: score(g && g.bs) })),
@@ -189,7 +195,7 @@ function sanitize(d) {
   const gallery = (Array.isArray(d.gallery) ? d.gallery : []).slice(0, 500)
     .filter(g => okImage(g.photo))
     .map(g => ({ id: str(g.id, 40) || crypto.randomUUID(), photo: g.photo, caption: str(g.caption, 140) }));
-  return { teams, matches, players, staff, gallery };
+  return { teams, rounds, matches, players, staff, gallery };
 }
 
 const server = http.createServer(async (req, res) => {
