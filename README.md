@@ -113,4 +113,3 @@ All content lives in `DATA_DIR`: `data.json` and the `uploads/` folder. Download
 - 5 wrong passwords lock the login for 5 minutes (per visitor).
 - Sessions last 12 hours. Restarting the server logs everyone out.
 - The page sends a Content-Security-Policy, HSTS (over HTTPS) and other standard security headers.
-- kokot
