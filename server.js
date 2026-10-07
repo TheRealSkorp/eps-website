@@ -195,7 +195,15 @@ function sanitize(d) {
   const gallery = (Array.isArray(d.gallery) ? d.gallery : []).slice(0, 500)
     .filter(g => okImage(g.photo))
     .map(g => ({ id: str(g.id, 40) || crypto.randomUUID(), photo: g.photo, caption: str(g.caption, 140) }));
-  return { teams, rounds, matches, players, staff, gallery };
+  const news = (Array.isArray(d.news) ? d.news : []).slice(0, 300).map(n => ({
+    id: str(n.id, 40) || crypto.randomUUID(),
+    title: str(n.title, 120) || 'Untitled',
+    body: String(n.body ?? '').trim().slice(0, 2000),
+    date: /^\d{4}-\d{2}-\d{2}$/.test(n.date) ? n.date : new Date().toISOString().slice(0, 10),
+    pinned: !!n.pinned,
+    bar: !!n.bar,
+  }));
+  return { teams, rounds, matches, players, staff, gallery, news };
 }
 
 const server = http.createServer(async (req, res) => {

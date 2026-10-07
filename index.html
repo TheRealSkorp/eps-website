@@ -111,6 +111,28 @@ h2{font-size:clamp(40px,5.4vw,64px);font-weight:800;color:var(--ink);margin-bott
 .fx-games b{color:var(--ink)}
 .fx-state{font-family:var(--disp);font-weight:700;letter-spacing:.08em;text-transform:uppercase;font-size:15px;text-align:right;color:var(--muted)}
 
+/* Top announcement bar */
+.topbar{background:var(--accent);color:var(--on-accent);font-size:15px}
+.topbar .wrap{display:flex;align-items:center;gap:12px;min-height:44px;padding:6px 0}
+.topbar .tag{flex:none;font-family:var(--disp);font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:13px;background:var(--on-accent);color:var(--accent);border-radius:6px;padding:1px 9px}
+.topbar .msg{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.topbar a{font-weight:600;text-decoration:underline;text-underline-offset:3px;margin-left:6px}
+.topbar button{flex:none;background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:4px 10px;border-radius:6px;opacity:.85}
+.topbar button:hover{opacity:1;background:rgba(255,255,255,.16)}
+@media (prefers-color-scheme:dark){.topbar{background:#12295e;color:#e8eefb}.topbar .tag{background:#7aa5ff;color:#06142f}}
+
+/* News posts */
+.news-list{display:grid;gap:14px;max-width:880px}
+.post{padding:22px 26px;border-left:6px solid var(--line)}
+.post.pinned{border-left-color:var(--accent)}
+.post .meta{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--muted);margin-bottom:6px}
+.post .pin{font-family:var(--disp);font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:13px;background:var(--accent);color:var(--on-accent);border-radius:6px;padding:0 8px}
+.post h3{font-size:30px;margin-bottom:8px}
+.post p{color:var(--muted);font-size:17px;max-width:70ch}
+.post p + p{margin-top:10px}
+.post a{color:var(--link);font-weight:600;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
+@media (max-width:1200px){nav ul{gap:22px}}
+
 /* Round selector */
 .rtabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
 .rtab{font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:.06em;text-transform:uppercase;padding:8px 18px;border-radius:var(--r);border:2px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;transition:background .2s,border-color .2s,color .2s}
@@ -358,11 +380,19 @@ footer .foot-links a:hover{border-color:var(--accent)}
 <script>document.documentElement.classList.add('js')</script>
 </head>
 <body>
+<div class="topbar" id="topbar" role="region" aria-label="Announcement" hidden>
+  <div class="wrap">
+    <span class="tag">News</span>
+    <span class="msg"><strong id="topbarTitle"></strong> <a href="#news">Read more</a></span>
+    <button type="button" id="topbarClose" aria-label="Close this announcement">Close</button>
+  </div>
+</div>
 <header>
   <div class="wrap nav">
     <a class="brand" href="#top" aria-label="EPS home"><span class="logo-plate"><img src="logo.png" alt=""></span><span>EPS</span></a>
     <nav id="menu" aria-label="Main">
       <ul>
+        <li id="navNews" hidden><a href="#news">News</a></li>
         <li><a href="#matches">Matches</a></li>
         <li><a href="#gallery">Gallery</a></li>
         <li><a href="#standings">Standings</a></li>
@@ -401,6 +431,13 @@ footer .foot-links a:hover{border-color:var(--accent)}
     <div><b>4+1</b><small>Skaters plus goalie</small></div>
     <div><b id="sGoals">0</b><small>Goals scored</small></div>
   </div></div>
+
+  <section id="news" class="tint" hidden><div class="wrap rv">
+    <h2>News</h2>
+    <p class="sub">Important messages from the league.</p>
+    <div id="newsList" class="news-list"></div>
+    <p id="newsMore" hidden style="margin-top:22px"><button type="button" class="btn ghost" id="newsMoreBtn">Show older news</button></p>
+  </div></section>
 
   <section id="matches"><div class="wrap rv">
     <h2>Fixtures and results</h2>
@@ -661,6 +698,29 @@ function render(D){
   };
   document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>show(b.dataset.k));
   show("g");
+
+  // news: pinned first, then newest first. The section and its menu link only exist when there are posts.
+  const posts=(D.news||[]).map((n,i)=>({...n,i})).sort((a,b)=>(b.pinned-a.pinned)||String(b.date).localeCompare(String(a.date))||a.i-b.i);
+  const linkify=t=>esc(t).replace(/(https?:\/\/[^\s<]+?)([.,;:!?)]*)(?=\s|$)/g,(m,u,p)=>`<a href="${u}" target="_blank" rel="noopener">${u}</a>${p}`);
+  const niceDate=d=>{const x=new Date(d+"T00:00:00");return isNaN(x)?"":x.toLocaleDateString([],{day:"numeric",month:"short",year:"numeric"})};
+  if(posts.length){
+    document.getElementById("news").hidden=false;document.getElementById("navNews").hidden=false;
+    const list=document.getElementById("newsList"),more=document.getElementById("newsMore");let shownPosts=0;
+    const paintPosts=()=>{
+      const next=posts.slice(shownPosts,shownPosts+4);
+      list.insertAdjacentHTML("beforeend",next.map(n=>`<article class="card post${n.pinned?" pinned":""}"><div class="meta">${n.pinned?'<span class="pin">Pinned</span>':""}<span>${esc(niceDate(n.date))}</span></div><h3>${esc(n.title)}</h3>${n.body.split(/\n+/).filter(Boolean).map(p=>`<p>${linkify(p)}</p>`).join("")}</article>`).join(""));
+      shownPosts+=next.length;more.hidden=shownPosts>=posts.length;
+    };
+    paintPosts();document.getElementById("newsMoreBtn").onclick=paintPosts;
+    // slim bar at the very top: the newest post marked "show in the bar", unless the visitor already closed it
+    const barPost=posts.filter(n=>n.bar).sort((a,b)=>String(b.date).localeCompare(String(a.date))||a.i-b.i)[0];
+    const bar=document.getElementById("topbar");
+    let closed="";try{closed=localStorage.getItem("eps_bar_closed")||""}catch(e){}
+    if(barPost&&closed!==barPost.id){
+      document.getElementById("topbarTitle").textContent=barPost.title;bar.hidden=false;
+      document.getElementById("topbarClose").onclick=()=>{bar.hidden=true;try{localStorage.setItem("eps_bar_closed",barPost.id)}catch(e){}};
+    }
+  }
 
   // gallery: newest first, 12 at a time, click for a full-size viewer
   const pics=D.gallery||[],box2=document.getElementById("galleryList"),moreWrap=document.getElementById("galleryMore");

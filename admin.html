@@ -39,6 +39,7 @@ input[type=text]{flex:1;min-width:140px}
 label.chk{display:flex;gap:6px;align-items:center;font-size:14px;color:var(--muted)}
 .score{display:flex;align-items:center;gap:6px;font-weight:700}
 [hidden]{display:none!important}
+textarea{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);resize:vertical}
 button:disabled{opacity:.45;cursor:default}
 .round{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:14px 0;background:#fbfdff}
 .round-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding-bottom:8px;border-bottom:1px solid var(--line)}
@@ -80,6 +81,7 @@ button:disabled{opacity:.45;cursor:default}
     <button data-t="players">Players</button>
     <button data-t="staff">Staff</button>
     <button data-t="gallery">Gallery</button>
+    <button data-t="news">News</button>
   </div>
   <div id="panel"></div>
 </div>
@@ -105,7 +107,7 @@ function show(on){
   if(on)render();
 }
 async function load(){
-  data=await api('/api/data');data.staff=data.staff||[];data.gallery=data.gallery||[];data.rounds=data.rounds||[];
+  data=await api('/api/data');data.staff=data.staff||[];data.gallery=data.gallery||[];data.rounds=data.rounds||[];data.news=data.news||[];
   // every match has exactly 3 game slots; the old single-score format becomes game 1
   data.matches.forEach(m=>{
     const g=Array.isArray(m.games)?m.games:(m.as!=null?[{as:m.as,bs:m.bs}]:[]);
@@ -209,6 +211,22 @@ function render(){
       ${data.rounds.map(roundBlock).join('')}${looseBlock}
       <p class="hint" style="margin-top:10px">Rounds group the matches on the site (Round 1, Quarterfinals, and so on) in the order shown here. Use Up and Down to reorder them, and the dropdown on a match to move it to another round. A match is a series: enter the score of Game 1 and Game 2 (team on the left first). Game 3 only appears if it is 1:1. The series result and points are worked out for you. Leave scores empty for matches not played yet.</p></div>`;
   }
+  if(tab==='news'){
+    P.innerHTML=`<div class="card"><h2>News</h2>
+      <p style="margin-bottom:12px"><button data-add="news">+ Add post</button></p>
+      ${data.news.map((n,i)=>`
+      <div class="round">
+        <div class="round-head"><input type="text" class="rname" data-l="news" data-i="${i}" data-k="title" value="${esc(n.title)}" maxlength="120" placeholder="Title" aria-label="Title">
+          <input type="date" data-l="news" data-i="${i}" data-k="date" value="${esc(n.date)}" aria-label="Date">
+          <button class="del" data-del="news" data-i="${i}">Delete</button></div>
+        <textarea data-l="news" data-i="${i}" data-k="body" rows="4" maxlength="2000" placeholder="Message (links starting with https:// become clickable)" style="width:100%;margin:10px 0 8px">${esc(n.body)}</textarea>
+        <div style="display:flex;gap:20px;flex-wrap:wrap">
+          <label class="chk"><input type="checkbox" data-l="news" data-i="${i}" data-k="pinned" ${n.pinned?'checked':''}>Pin to the top of the news list</label>
+          <label class="chk"><input type="checkbox" data-l="news" data-i="${i}" data-k="bar" ${n.bar?'checked':''}>Show in the bar at the very top of the site</label>
+        </div>
+      </div>`).join('')||'<p class="hint">No posts yet. The News section only appears on the site once there is at least one post.</p>'}
+      <p class="hint" style="margin-top:10px">Newest posts show first, pinned posts above them. Only one post appears in the top bar: the newest one with "Show in the bar" ticked. Visitors can close the bar, and it comes back when you tick a different post. Press Save changes to publish.</p></div>`;
+  }
   if(tab==='gallery'){
     P.innerHTML=`<div class="card"><h2>Gallery</h2>
       <p style="margin-bottom:14px"><button class="file">Upload photos<input type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif" data-gal></button></p>
@@ -301,6 +319,7 @@ $('#panel').addEventListener('click',e=>{
     const l=b.dataset.add,first=data.teams[0]?.id,second=data.teams[1]?.id;
     if(l==='teams')data.teams.push({id:uid(),name:'New team',color:'#1b57c4',logo:'',gm:'',am:''});
     if(l==='matches')data.matches.push({id:uid(),date:'',round:b.dataset.round||'',a:first,b:second,games:emptyGames()});
+    if(l==='news')data.news.unshift({id:uid(),title:'',body:'',date:new Date().toISOString().slice(0,10),pinned:false,bar:false});
     if(l==='staff')data.staff.push({id:uid(),name:'',role:'Moderator',bio:'',photo:''});
     if(l==='players')data.players.push({id:uid(),name:'',team:pf||first,role:'skater',number:'',tag:'',g:0,a:0,saves:0,shots:0});
   }else if(b.dataset.del){
