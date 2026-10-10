@@ -121,6 +121,18 @@
     {
       "id": "6d6ef891-0c3d-4dc1-baae-c260cb788765",
       "name": "Round 2"
+    },
+    {
+      "id": "82df014b-aa0d-45d0-908f-d83d494194cd",
+      "name": "Quarterfinals"
+    },
+    {
+      "id": "7ad4fb69-3aa4-4698-a0d3-0ebc13ebc319",
+      "name": "Semifinals"
+    },
+    {
+      "id": "a41fd0a0-eeb6-4951-84a3-97ee9041547e",
+      "name": "Final"
     }
   ],
   "matches": [
@@ -148,7 +160,7 @@
     {
       "id": "303c36f3-506d-43b0-83ee-d4513ad182a9",
       "date": "",
-      "a": "hc-gladiators",
+      "a": "rogle-bk",
       "b": "hc-cockarna",
       "round": "6d6ef891-0c3d-4dc1-baae-c260cb788765",
       "games": [
@@ -157,12 +169,75 @@
           "bs": 1
         },
         {
-          "as": 2,
+          "as": 4,
           "bs": 3
         },
         {
           "as": 3,
+          "bs": 0
+        }
+      ]
+    },
+    {
+      "id": "7218f2f4-406f-411e-a353-40ca956adfa9",
+      "date": "",
+      "a": "hc-gladiators",
+      "b": "aztec-warriors",
+      "round": "82df014b-aa0d-45d0-908f-d83d494194cd",
+      "games": [
+        {
+          "as": 4,
           "bs": 1
+        },
+        {
+          "as": 4,
+          "bs": 0
+        },
+        {
+          "as": null,
+          "bs": null
+        }
+      ]
+    },
+    {
+      "id": "0e655990-9099-4a4e-9734-d63eec6aa044",
+      "date": "",
+      "a": "hc-gladiators",
+      "b": "hc-cockarna",
+      "round": "7ad4fb69-3aa4-4698-a0d3-0ebc13ebc319",
+      "games": [
+        {
+          "as": null,
+          "bs": null
+        },
+        {
+          "as": null,
+          "bs": null
+        },
+        {
+          "as": null,
+          "bs": null
+        }
+      ]
+    },
+    {
+      "id": "2c0b96fd-454d-4b21-ae36-56b8160a373e",
+      "date": "",
+      "a": "hk-bahrein",
+      "b": "hc-kosice",
+      "round": "82df014b-aa0d-45d0-908f-d83d494194cd",
+      "games": [
+        {
+          "as": 0,
+          "bs": 3
+        },
+        {
+          "as": 0,
+          "bs": 1
+        },
+        {
+          "as": null,
+          "bs": null
         }
       ]
     }
@@ -1671,5 +1746,12 @@
       "pinned": true,
       "bar": true
     }
-  ]
+  ],
+  "bracket": {
+    "published": false,
+    "qf": "82df014b-aa0d-45d0-908f-d83d494194cd",
+    "sf": "7ad4fb69-3aa4-4698-a0d3-0ebc13ebc319",
+    "f": "a41fd0a0-eeb6-4951-84a3-97ee9041547e",
+    "seeds": []
+  }
 }

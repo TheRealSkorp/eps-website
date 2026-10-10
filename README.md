@@ -16,7 +16,11 @@ Locally, the admin password is read from `ADMIN_PASSWORD` or from the file `.adm
 
 ## Admin
 
-Tabs: Teams, Matches, Players, Staff, Gallery. Press **Save changes** after editing, or nothing is published.
+Tabs: Teams, Matches, Players, Staff, Gallery, News, Bracket. Press **Save changes** after editing, or nothing is published.
+
+- **Matches** are grouped into rounds. Add a round, then add matches inside it.
+- **News** posts can be pinned and can also show in the slim bar at the very top of the site.
+- **Bracket** is the playoff tree (see "Playoff bracket" below).
 
 ## Files
 
@@ -25,7 +29,8 @@ Tabs: Teams, Matches, Players, Staff, Gallery. Press **Save changes** after edit
 | `index.html` | The public website |
 | `admin.html` | The admin page |
 | `server.js` | Serves the site, stores data, handles login and uploads |
-| `data.json` | All content: teams, players, matches, staff, gallery |
+| `standings.js` | Standings and bracket calculations, shared by the site and the admin page |
+| `data.json` | All content: teams, rounds, matches, players, staff, gallery, news, bracket |
 | `uploads/` | Uploaded team logos, staff photos and gallery photos |
 | `logo.png` | The EPS logo |
 | `hash-password.js` | Makes a hashed admin password for hosting |
@@ -38,6 +43,23 @@ Tabs: Teams, Matches, Players, Staff, Gallery. Press **Save changes** after edit
 A match is a series of up to 3 games. First to 2 game wins takes the series.
 2-0 win: winner 3 points, loser 0. 2-1 win: winner 2 points, loser 1.
 Equal points are split by games won, then head-to-head, then series won, then goal difference.
+
+## Playoff bracket
+
+An 8-team knockout tree: 1v8, 5v4, 3v6, 7v2, then the winners meet, then the final.
+
+1. In the admin open **Bracket** and press **Create the 3 rounds** (Quarterfinals, Semifinals, Final).
+2. Enter the playoff matches in the **Matches** tab inside those rounds, like any other match
+   (team on the left first, game scores as usual). Winners move forward by themselves.
+3. **Seeds 1 to 8 follow the standings table** and update as regular-season results come in.
+   Tick **Freeze the seeding** when the regular season ends so they stop moving.
+4. Matches in the three playoff rounds never count in the standings table.
+5. **Draft until published:** until you tick **Publish**, the bracket, its matches and its round names are
+   removed from the data sent to visitors, so only logged-in admins can see them (on the site and in the admin).
+   Publishing makes everything public.
+
+If a result belongs to a pairing that no longer exists (for example because the seeds moved after
+you entered it), the Bracket tab and the draft page show a warning instead of silently dropping it.
 
 ---
 

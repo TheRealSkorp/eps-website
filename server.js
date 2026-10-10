@@ -28,7 +28,7 @@ if (!fs.existsSync(DATA_FILE)) {
     if (fs.existsSync(seedUploads)) for (const f of fs.readdirSync(seedUploads)) fs.copyFileSync(path.join(seedUploads, f), path.join(UPLOAD_DIR, f));
     console.log('Seeded', DATA_DIR, 'from the bundled data.json and uploads/');
   } else {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ teams: [], matches: [], players: [], staff: [], gallery: [] }, null, 2));
+    fs.writeFileSync(DATA_FILE, JSON.stringify({ teams: [], rounds: [], matches: [], players: [], staff: [], gallery: [], news: [] }, null, 2));
   }
 }
 
@@ -84,6 +84,7 @@ const STATIC = {
   '/index.html': ['index.html', 'text/html; charset=utf-8'],
   '/admin': ['admin.html', 'text/html; charset=utf-8'],
   '/admin.html': ['admin.html', 'text/html; charset=utf-8'],
+  '/standings.js': ['standings.js', 'application/javascript; charset=utf-8'],
   '/logo.png': ['logo.png', 'image/png'],
   '/favicon.ico': ['logo.png', 'image/png'],
   '/robots.txt': ['robots.txt', 'text/plain; charset=utf-8'],
@@ -203,7 +204,35 @@ function sanitize(d) {
     pinned: !!n.pinned,
     bar: !!n.bar,
   }));
-  return { teams, rounds, matches, players, staff, gallery, news };
+  // playoff bracket: three existing rounds are its stages; empty seeds mean "follow the live standings"
+  let bracket = null;
+  if (d.bracket && typeof d.bracket === 'object') {
+    const b = d.bracket;
+    const pick = id => (typeof id === 'string' && roundIds.has(id)) ? id : '';
+    let qf = pick(b.qf), sf = pick(b.sf), f = pick(b.f);
+    if (sf && sf === qf) sf = '';
+    if (f && (f === qf || f === sf)) f = '';
+    let seeds = Array.isArray(b.seeds) ? [...new Set(b.seeds.filter(id => ids.has(id)))].slice(0, 8) : [];
+    if (seeds.length !== 8) seeds = [];
+    bracket = { published: b.published === true, qf, sf, f, seeds };
+  }
+  return { teams, rounds, matches, players, staff, gallery, news, bracket };
+}
+
+// What a visitor may see. Until the bracket is published, admins get everything, while everyone else gets no
+// `bracket` field and none of the matches or rounds that belong to it (they would leak the draft otherwise).
+function publicView(data, admin) {
+  if (admin) return data;
+  const b = data.bracket;
+  if (b && b.published === true) return data;
+  const out = { ...data };
+  delete out.bracket;
+  const hidden = new Set(b ? [b.qf, b.sf, b.f].filter(Boolean) : []);
+  if (hidden.size) {
+    out.matches = (data.matches || []).filter(m => !hidden.has(m.round));
+    out.rounds = (data.rounds || []).filter(r => !hidden.has(r.id));
+  }
+  return out;
 }
 
 const server = http.createServer(async (req, res) => {
@@ -212,7 +241,10 @@ const server = http.createServer(async (req, res) => {
   if (req.headers['x-forwarded-proto'] === 'https') res.setHeader('Strict-Transport-Security', 'max-age=15552000');
   try {
     if (p === '/healthz') return send(res, 200, 'ok', 'text/plain');
-    if (p === '/api/data' && req.method === 'GET') return send(res, 200, fs.readFileSync(DATA_FILE));
+    if (p === '/api/data' && req.method === 'GET') {
+      const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+      return send(res, 200, publicView(data, isAdmin(req)));
+    }
     if (p === '/api/me') return send(res, 200, { admin: isAdmin(req) });
 
     if (p === '/api/login' && req.method === 'POST') {

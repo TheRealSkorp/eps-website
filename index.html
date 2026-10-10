@@ -133,6 +133,58 @@ h2{font-size:clamp(40px,5.4vw,64px);font-weight:800;color:var(--ink);margin-bott
 .post a{color:var(--link);font-weight:600;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
 @media (max-width:1200px){nav ul{gap:22px}}
 
+/* Playoff bracket */
+.bracket-sec{--b-line:rgba(255,255,255,.4);color:#fff;background:
+  radial-gradient(800px 380px at 92% -10%,rgba(255,255,255,.16),transparent 65%),
+  radial-gradient(600px 300px at 0% 115%,rgba(255,255,255,.08),transparent 70%),#0a2a6e}
+.bracket-sec h2{color:#fff}
+.bracket-sec .sub{color:rgba(255,255,255,.82)}
+@media (prefers-color-scheme:dark){.bracket-sec{background:
+  radial-gradient(800px 380px at 92% -10%,rgba(122,165,255,.18),transparent 65%),#0c1d44}}
+.b-draft{display:inline-block;margin-bottom:20px;padding:10px 16px;border-radius:var(--r);background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);font-size:15px}
+.b-warn{margin:0 0 22px;padding:12px 16px 12px 34px;border-radius:var(--r);background:rgba(255,190,60,.16);border:1px solid rgba(255,200,90,.5);font-size:15px}
+.b-warn li + li{margin-top:4px}
+.bracket{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 48px;align-items:stretch}
+.b-col{display:flex;flex-direction:column}
+.b-col > h3{font-size:22px;letter-spacing:.1em;color:rgba(255,255,255,.85);margin-bottom:14px}
+.b-body{flex:1;display:flex;flex-direction:column;position:relative}
+.b-pair,.b-cell{flex:1;display:flex;position:relative}
+.b-pair{flex-direction:column;justify-content:space-around;gap:14px;padding:7px 0}
+.b-cell{align-items:center}
+.b-pair::after{content:"";position:absolute;right:-24px;top:25%;bottom:25%;width:24px;border:2px solid var(--b-line);border-left:0}
+.b-cell.in::before{content:"";position:absolute;left:-24px;top:50%;width:24px;border-top:2px solid var(--b-line)}
+.b-body.bj::after{content:"";position:absolute;right:-24px;top:25%;bottom:25%;width:24px;border:2px solid var(--b-line);border-left:0}
+.b-match{width:100%;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.25);overflow:hidden}
+.b-row{display:grid;grid-template-columns:22px auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 12px}
+.b-row{min-height:54px}
+.b-row + .b-row{border-top:1px solid var(--line)}
+.b-row .badge{width:30px;height:30px;font-size:12px}
+.b-seed{font-family:var(--disp);font-weight:800;font-size:17px;color:var(--muted);text-align:center}
+.b-name{font-family:var(--disp);font-weight:700;font-size:20px;text-transform:uppercase;letter-spacing:.015em;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.b-name .ph{font-family:var(--body);font-weight:500;font-size:14px;text-transform:none;letter-spacing:0;color:var(--muted)}
+.b-score{font-family:var(--disp);font-weight:800;font-size:24px;min-width:20px;text-align:right;color:var(--muted)}
+.b-row.win .b-name,.b-row.win .b-score{color:var(--accent)}
+.b-row.lose{opacity:.55}
+.b-state{padding:5px 12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:var(--muted);background:var(--tint);border-top:1px solid var(--line)}
+.b-champ{margin-top:14px;padding:12px 16px;border-radius:var(--r);background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.4);font-size:15px}
+.b-champ strong{font-family:var(--disp);font-size:24px;text-transform:uppercase;letter-spacing:.02em;display:block;line-height:1.1}
+@media (max-width:860px){
+  .bracket{grid-template-columns:1fr;gap:26px}
+  .b-pair::after,.b-cell.in::before,.b-body.bj::after{display:none}
+  .b-pair{padding:0}
+  .b-pair,.b-cell{flex:none}
+  .b-body{gap:14px}
+}
+
+/* Playoff places in the standings (top 8) */
+:root{--po:#15803d;--po-bg:rgba(22,163,74,.13)}
+@media (prefers-color-scheme:dark){:root{--po:#4ade80;--po-bg:rgba(74,222,128,.14)}}
+.tbl tbody tr.po{background:linear-gradient(90deg,var(--po-bg),var(--po-bg))}
+.tbl tbody tr.po:hover{background:linear-gradient(90deg,var(--po-bg),var(--po-bg)),var(--tint)}
+.tbl tbody tr.po td:first-child{color:var(--po);box-shadow:inset 4px 0 var(--po)}
+.tbl tbody tr.po td.pts{color:var(--po)}
+.po-key{display:inline-block;width:12px;height:12px;margin-right:8px;border-radius:3px;background:var(--po);vertical-align:-1px}
+
 /* Round selector */
 .rtabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:26px}
 .rtab{font-family:var(--disp);font-weight:700;font-size:18px;letter-spacing:.06em;text-transform:uppercase;padding:8px 18px;border-radius:var(--r);border:2px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;transition:background .2s,border-color .2s,color .2s}
@@ -396,6 +448,7 @@ footer .foot-links a:hover{border-color:var(--accent)}
         <li><a href="#matches">Matches</a></li>
         <li><a href="#gallery">Gallery</a></li>
         <li><a href="#standings">Standings</a></li>
+        <li id="navBracket" hidden><a href="#bracket">Playoffs</a></li>
         <li><a href="#teams">Teams</a></li>
         <li><a href="#players">Leaders</a></li>
         <li><a href="#rules">Rules</a></li>
@@ -458,7 +511,15 @@ footer .foot-links a:hover{border-color:var(--accent)}
       <thead><tr><th scope="col">#</th><th scope="col">Team</th><th scope="col" title="Series played">SP</th><th scope="col" title="Series won">SW</th><th scope="col" title="Series lost">SL</th><th scope="col" title="Matches played">MP</th><th scope="col" title="Matches won">MW</th><th scope="col" title="Matches lost">ML</th><th scope="col">GF</th><th scope="col">GA</th><th scope="col">PTS</th></tr></thead>
       <tbody id="standBody"><tr><td colspan="11"><div class="sk" style="margin:0"></div></td></tr></tbody>
     </table></div>
-    <p class="note">A series won 2-0 earns the winner 3 points. A series won 2-1 earns the winner 2 points and the loser 1 point. Equal points are split by matches won, then head-to-head, then series won, then goal difference.</p>
+    <p class="note"><span class="po-key" aria-hidden="true"></span>Green rows are the playoff places (top 8). A series won 2-0 earns the winner 3 points. A series won 2-1 earns the winner 2 points and the loser 1 point. Equal points are split by matches won, then head-to-head, then series won, then goal difference.</p>
+  </div></section>
+
+  <section id="bracket" class="bracket-sec" hidden><div class="wrap rv">
+    <h2>Playoffs</h2>
+    <p class="sub" id="bracketSub">The top 8 teams of the table meet in a knockout bracket. Seeds follow the standings.</p>
+    <div id="bracketDraft" class="b-draft" hidden><strong>Draft:</strong> only admins can see this. Publish it in the admin under Bracket when the playoffs begin.</div>
+    <ul id="bracketWarn" class="b-warn" hidden></ul>
+    <div id="bracketTree" class="bracket"></div>
   </div></section>
 
   <section id="teams" class="tint"><div class="wrap rv">
@@ -530,6 +591,7 @@ footer .foot-links a:hover{border-color:var(--accent)}
   <p class="foot-note">© 2026 European Puck Series. Not affiliated with the developers of Puck.</p>
 </div></footer>
 
+<script src="/standings.js"></script>
 <script>
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const abbr=n=>n.split(/\s+/).map(w=>w[0]).join("").slice(0,3).toUpperCase();
@@ -572,53 +634,43 @@ fetch("/api/data").then(r=>r.json()).then(render).catch(()=>{
 function render(D){
   const T=Object.fromEntries(D.teams.map(t=>[t.id,t]));
   const badge=t=>t.logo?`<img class="badge img" src="${esc(t.logo)}" alt="${esc(t.name)} logo">`:`<span class="badge" aria-hidden="true">${esc(abbr(t.name))}</span>`;
-  // A match is a series of up to 3 games between two teams. Each game has its own score.
-  // First to 2 game wins takes the series. 2-0: winner 3 pts, loser 0. 2-1: winner 2 pts, loser 1.
+  // standings and series results come from standings.js (shared with the admin page).
+  // Matches in the playoff bracket rounds are left out of the table, so they cannot change the seeds.
   const ts=m=>new Date(m.date).getTime()||0;
-  const gamesOf=m=>(Array.isArray(m.games)?m.games:(m.as!=null?[{as:m.as,bs:m.bs}]:[])).slice(0,3);
-  const valid=g=>g&&g.as!=null&&g.bs!=null&&g.as!==g.bs;
-  const state=m=>{
-    let wa=0,wb=0;const counted=[];
-    for(const [i,g] of gamesOf(m).entries()){
-      if(wa>=2||wb>=2)break;       // a 3rd game after a 2-0 result is ignored
-      if(i===2&&!(wa===1&&wb===1))break; // game 3 only counts when the series is 1-1
-      if(!valid(g))continue;
-      counted.push(g);g.as>g.bs?wa++:wb++;
-    }
-    return {wa,wb,counted,decided:wa>=2||wb>=2,started:counted.length>0};
-  };
-
-  const S=Object.fromEntries(D.teams.map(t=>[t.id,{t,sp:0,sw:0,sl:0,mp:0,mw:0,ml:0,gf:0,ga:0,pts:0}]));
-  const h2h={}; // h2h[x][y] = games x has won against y
-  let gamesPlayed=0,goals=0;
-  D.matches.forEach(m=>{
-    const A=S[m.a],B=S[m.b];if(!A||!B)return;
-    const st=state(m);
-    st.counted.forEach(g=>{
-      A.mp++;B.mp++;A.gf+=g.as;A.ga+=g.bs;B.gf+=g.bs;B.ga+=g.as;
-      gamesPlayed++;goals+=g.as+g.bs;
-      const [w,l,wid,lid]=g.as>g.bs?[A,B,m.a,m.b]:[B,A,m.b,m.a];
-      w.mw++;l.ml++;
-      h2h[wid]=h2h[wid]||{};h2h[wid][lid]=(h2h[wid][lid]||0)+1;
-    });
-    if(st.decided){
-      const aWon=st.wa>=2,w=aWon?A:B,l=aWon?B:A,loserGames=aWon?st.wb:st.wa;
-      w.sw++;l.sl++;w.sp++;l.sp++;
-      w.pts+=loserGames===0?3:2;l.pts+=loserGames===0?0:1;
-    }
-  });
+  const state=EPS.state;
+  const {sorted,gamesPlayed,goals}=EPS.compute(D,EPS.playoffRoundIds(D));
   const pts=r=>r.pts;
-  // tiebreakers: points, then games won, then head-to-head games, then series won, goal difference, goals for
-  const h2hWins=(r,group)=>group.reduce((n,o)=>o===r?n:n+((h2h[r.t.id]||{})[o.t.id]||0)-((h2h[o.t.id]||{})[r.t.id]||0),0);
-  const rows=Object.values(S).sort((x,y)=>pts(y)-pts(x)||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf);
-  const sorted=[];
-  for(let i=0;i<rows.length;){
-    let j=i;while(j<rows.length&&pts(rows[j])===pts(rows[i]))j++;
-    const grp=rows.slice(i,j);
-    grp.sort((x,y)=>y.mw-x.mw||h2hWins(y,grp)-h2hWins(x,grp)||y.sw-x.sw||(y.gf-y.ga)-(x.gf-x.ga)||y.gf-x.gf);
-    sorted.push(...grp);i=j;
+  // the first 8 places are the playoff places (shown in green), once at least one game has been played
+  const started=sorted.some(r=>r.mp>0);
+  document.getElementById("standBody").innerHTML=sorted.map((r,i)=>`<tr class="${i===0&&pts(r)>0?"top ":""}${started&&i<8?"po":""}"><td>${i+1}</td><td class="team"><span class="t">${badge(r.t)}${esc(r.t.name)}</span></td><td>${r.sp}</td><td>${r.sw}</td><td>${r.sl}</td><td>${r.mp}</td><td>${r.mw}</td><td>${r.ml}</td><td>${r.gf}</td><td>${r.ga}</td><td class="pts">${pts(r)}</td></tr>`).join("")||'<tr><td colspan="11">No teams yet</td></tr>';
+
+  // playoff bracket: the server only sends it to admins until it is published
+  const BR=D.bracket?EPS.bracket(D):null;
+  if(BR){
+    document.getElementById("bracket").hidden=false;document.getElementById("navBracket").hidden=false;
+    document.getElementById("bracketDraft").hidden=D.bracket.published===true;
+    const warn=document.getElementById("bracketWarn");
+    warn.innerHTML=BR.warnings.map(w=>`<li>${esc(w)}</li>`).join("");warn.hidden=!BR.warnings.length;
+    const label={final:"Finished",progress:"In progress",unscheduled:"Not played yet",tbd:"Waiting for teams"};
+    const row=(s,slot,mine)=>{
+      const t=s.team,win=slot.winner&&t&&slot.winner.id===t.id,lose=slot.winner&&t&&!win;
+      const shown=slot.status==="final"||slot.status==="progress";
+      const nm=t?esc(t.name):`<span class="ph">${esc(s.from||("Seed "+s.seed))}</span>`;
+      return `<div class="b-row${win?" win":""}${lose?" lose":""}"><span class="b-seed">${t&&s.seed?s.seed:""}</span>${t?badge(t):"<span></span>"}<span class="b-name">${nm}</span><span class="b-score">${shown?(mine===0?slot.wa:slot.wb):""}</span></div>`;
+    };
+    const card=slot=>`<div class="b-match">${row(slot.a,slot,0)}${row(slot.b,slot,1)}<div class="b-state">${label[slot.status]}</div></div>`;
+    const tree=document.getElementById("bracketTree");
+    tree.innerHTML=
+      `<div class="b-col"><h3>Quarterfinals</h3><div class="b-body">
+         <div class="b-pair">${card(BR.qf[0])}${card(BR.qf[1])}</div>
+         <div class="b-pair">${card(BR.qf[2])}${card(BR.qf[3])}</div></div></div>`+
+      `<div class="b-col"><h3>Semifinals</h3><div class="b-body bj">
+         <div class="b-cell in">${card(BR.sf[0])}</div>
+         <div class="b-cell in">${card(BR.sf[1])}</div></div></div>`+
+      `<div class="b-col"><h3>Final</h3><div class="b-body">
+         <div class="b-cell in">${card(BR.final)}</div></div>
+         ${BR.champion?`<div class="b-champ">Champion<strong>${esc(BR.champion.name)}</strong></div>`:""}</div>`;
   }
-  document.getElementById("standBody").innerHTML=sorted.map((r,i)=>`<tr class="${i===0&&pts(r)>0?"top":""}"><td>${i+1}</td><td class="team"><span class="t">${badge(r.t)}${esc(r.t.name)}</span></td><td>${r.sp}</td><td>${r.sw}</td><td>${r.sl}</td><td>${r.mp}</td><td>${r.mw}</td><td>${r.ml}</td><td>${r.gf}</td><td>${r.ga}</td><td class="pts">${pts(r)}</td></tr>`).join("")||'<tr><td colspan="11">No teams yet</td></tr>';
 
   // fixtures
   const items=D.matches.filter(m=>T[m.a]&&T[m.b]).map(m=>({m,st:state(m)}));
