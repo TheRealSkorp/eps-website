@@ -44,6 +44,13 @@ A match is a series of up to 3 games. First to 2 game wins takes the series.
 2-0 win: winner 3 points, loser 0. 2-1 win: winner 2 points, loser 1.
 Equal points are split by games won, then head-to-head, then series won, then goal difference.
 
+## Discord bot results
+
+The result bot can send every confirmed `/result` to the website. They wait in **Admin > Matches > "Bot results
+waiting for approval"**: **Approve** adds the match (then press **Save changes**), **Reject** drops it.
+Nothing from the bot is public until an admin approves it. Set it up with the steps in `bot-integration/README.md`
+(a `BOT_TOKEN` on the website, a **Bot code** on every team, and `website_sync.py` next to `bot.py`).
+
 ## Playoff bracket
 
 An 8-team knockout tree: 1v8, 5v4, 3v6, 7v2, then the winners meet, then the final.
@@ -80,6 +87,7 @@ you entered it), the Bracket tab and the draft page show a warning instead of si
 | `ADMIN_PASSWORD_HASH` | the line printed by `node hash-password.js` (see below) |
 | `DATA_DIR` | the folder where the persistent disk is mounted, e.g. `/data` |
 | `TRUST_PROXY` | `1` (so login lockouts work per visitor behind the host's proxy) |
+| `BOT_TOKEN` | Optional. A long random secret that lets the Discord bot send match results (see "Discord bot results"). Without it the bot link is off. |
 | `PORT` | usually set by the host automatically; do not set it unless told to |
 
 `ADMIN_PASSWORD` (plain text) also works, but the hash is safer.

@@ -111,6 +111,7 @@ function show(on){
 async function load(){
   data=await api('/api/data');data.staff=data.staff||[];data.gallery=data.gallery||[];data.rounds=data.rounds||[];data.news=data.news||[];
   data.bracket=data.bracket||{published:false,qf:'',sf:'',f:'',seeds:[]};
+  data.inbox=data.inbox||[];
   // every match has exactly 3 game slots; the old single-score format becomes game 1
   data.matches.forEach(m=>{
     const g=Array.isArray(m.games)?m.games:(m.as!=null?[{as:m.as,bs:m.bs}]:[]);
@@ -161,12 +162,15 @@ const teamOpts=sel=>data.teams.map(t=>`<option value="${esc(t.id)}"${t.id===sel?
 
 function render(){
   const P=$('#panel');
+  const mt=document.querySelector('#tabs [data-t="matches"]');
+  if(mt)mt.textContent='Matches'+(data.inbox&&data.inbox.length?` (${data.inbox.length} new)`:'');
   if(tab==='teams'){
     P.innerHTML=`<div class="card"><h2>Teams</h2>${data.teams.map((t,i)=>`
       <div class="row"><div class="logo-prev">${t.logo?`<img src="${esc(t.logo)}" alt="">`:'No logo'}</div>
       <div style="flex:1;min-width:260px;display:grid;gap:8px">
         <input type="text" data-l="teams" data-i="${i}" data-k="name" value="${esc(t.name)}" placeholder="Team name" style="width:100%">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="text" data-l="teams" data-i="${i}" data-k="code" value="${esc(t.code||'')}" placeholder="Bot code, e.g. GV" maxlength="12" style="flex:0 1 150px;min-width:110px" title="The short team code the Discord bot uses">
           <input type="text" data-l="teams" data-i="${i}" data-k="gm" value="${esc(t.gm)}" placeholder="GM" maxlength="40" style="flex:1;min-width:110px">
           <input type="text" data-l="teams" data-i="${i}" data-k="am" value="${esc(t.am)}" placeholder="AM" maxlength="40" style="flex:1;min-width:110px">
           <label class="chk">Roster colour <input type="color" data-l="teams" data-i="${i}" data-k="color" value="${esc(t.color||'#1b57c4')}"></label>
@@ -210,7 +214,36 @@ function render(){
         <div class="round-head"><strong>${data.rounds.length?'Matches without a round':'All matches'}</strong></div>
         ${loose.map(([m,i])=>matchRow(m,i)).join('')||'<p class="hint" style="padding:10px 0">No matches yet.</p>'}
         <p style="margin:8px 0 2px"><button data-add="matches" data-round="" ${few?'disabled':''}>+ Add match</button></p></div>`:'';
+    // results sent by the Discord bot wait here until an admin approves them
+    const teamByCode=(code,name)=>{
+      const c=String(code||'').trim().toLowerCase(),n=String(name||'').trim().toLowerCase();
+      return data.teams.find(t=>c&&String(t.code||'').trim().toLowerCase()===c)||data.teams.find(t=>n&&t.name.trim().toLowerCase()===n);
+    };
+    const inboxRound=it=>{const r=it.round?data.rounds.find(x=>x.name.trim().toLowerCase()==='round '+it.round):null;return r?r.id:''};
+    const inboxHtml=data.inbox.length?`<div class="round" style="border-color:#e0a82e;background:#fffaf0">
+      <div class="round-head"><strong>Bot results waiting for approval (${data.inbox.length})</strong></div>
+      ${data.inbox.map(it=>{
+        const blue=teamByCode(it.blueCode,it.blueName),red=teamByCode(it.redCode,it.redName);
+        const rid=inboxRound(it),s=seriesState({games:[0,1,2].map(g=>it.games[g]?{as:it.games[g].as,bs:it.games[g].bs}:{as:null,bs:null})});
+        const dup=blue&&red&&data.matches.some(m=>((m.a===blue.id&&m.b===red.id)||(m.a===red.id&&m.b===blue.id))&&m.round===rid);
+        const problems=[!blue?`Unknown team code "${it.blueCode}": set it in the Teams tab.`:'',!red?`Unknown team code "${it.redCode}": set it in the Teams tab.`:'',dup?'A match between these teams already exists in this round.':''].filter(Boolean);
+        return `<div class="mrow">
+          <div class="row" style="border:0;padding-bottom:2px">
+            <strong>${esc(blue?blue.name:it.blueCode)}</strong><span class="hint">vs</span><strong>${esc(red?red.name:it.redCode)}</strong>
+            <span class="hint">games ${esc(it.games.map(g=>g.as+'-'+g.bs).join(', '))}, series ${s.wa}:${s.wb}${s.decided?'':' (not decided)'}</span>
+            ${it.url?`<a href="${esc(it.url)}" target="_blank" rel="noopener" class="hint">Discord post</a>`:''}
+          </div>
+          <div class="row" style="border:0;padding-top:2px">
+            <label class="chk">Round <select data-inbox-round="${esc(it.id)}">${roundOpts(rid)}</select></label>
+            <button data-approve="${esc(it.id)}" ${blue&&red?'':'disabled'}>Approve</button>
+            <button class="del" data-reject="${esc(it.id)}">Reject</button>
+            ${problems.length?`<span class="hint" style="color:#a15c00">${problems.map(esc).join(' ')}</span>`:''}
+          </div>
+        </div>`;}).join('')}
+      <p class="hint" style="margin-top:6px">Approve adds the match below. Then press Save changes to publish it. Reject deletes it from this list.</p>
+    </div>`:'';
     P.innerHTML=`<div class="card"><h2>Matches</h2>${few?'<p class="hint">Add at least 2 teams first.</p>':''}
+      ${inboxHtml}
       <p style="margin-bottom:6px"><button data-addround>+ Add round</button></p>
       ${data.rounds.map(roundBlock).join('')}${looseBlock}
       <p class="hint" style="margin-top:10px">Rounds group the matches on the site (Round 1, Quarterfinals, and so on) in the order shown here. Use Up and Down to reorder them, and the dropdown on a match to move it to another round. A match is a series: enter the score of Game 1 and Game 2 (team on the left first). Game 3 only appears if it is 1:1. The series result and points are worked out for you. Leave scores empty for matches not played yet.</p></div>`;
@@ -349,6 +382,26 @@ $('#panel').addEventListener('change',async e=>{
 });
 $('#panel').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.approve!==undefined){
+    const it=data.inbox.find(x=>x.id===b.dataset.approve);if(!it)return;
+    const find=(code,name)=>{const c=String(code||'').trim().toLowerCase(),n=String(name||'').trim().toLowerCase();
+      return data.teams.find(t=>c&&String(t.code||'').trim().toLowerCase()===c)||data.teams.find(t=>n&&t.name.trim().toLowerCase()===n)};
+    const blue=find(it.blueCode,it.blueName),red=find(it.redCode,it.redName);
+    if(!blue||!red){alert('Unknown team code. Set the bot code in the Teams tab first.');return}
+    const sel=document.querySelector(`select[data-inbox-round="${it.id}"]`);
+    const d=new Date(it.playedAt),p2=n=>String(n).padStart(2,'0');
+    const date=isNaN(d)?'':`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`;
+    data.matches.push({id:it.id,date,round:sel?sel.value:'',a:blue.id,b:red.id,
+      games:[0,1,2].map(g=>it.games[g]?{as:it.games[g].as,bs:it.games[g].bs}:{as:null,bs:null})});
+    data.inbox=data.inbox.filter(x=>x.id!==it.id);
+    dirty=true;msg('Approved: press Save changes to publish it');render();return}
+  if(b.dataset.reject!==undefined){
+    const id=b.dataset.reject;
+    if(!confirm('Reject this result? It is removed from the list and not added to the site.'))return;
+    api('/api/inbox/reject',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})})
+      .then(()=>{data.inbox=data.inbox.filter(x=>x.id!==id);msg('Result rejected');render()})
+      .catch(err=>msg(err.message,'err'));
+    return}
   if(b.dataset.addround!==undefined){data.rounds.push({id:uid(),name:'Round '+(data.rounds.length+1)});dirty=true;msg('Unsaved changes');render();return}
   if(b.dataset.mkrounds!==undefined){
     const want=[['qf','Quarterfinals'],['sf','Semifinals'],['f','Final']];

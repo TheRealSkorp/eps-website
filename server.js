@@ -7,6 +7,7 @@
 //   ADMIN_PASSWORD        plain admin password (simpler, less safe than the hash)
 //   NODE_ENV=production   refuses to start without a password set, instead of generating one
 //   TRUST_PROXY=1         set when behind a hosting proxy so login lockouts work per visitor
+//   BOT_TOKEN             secret the Discord bot uses to send match results (POST /api/bot/result). Unset = bot link off.
 const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
 
 const PORT = process.env.PORT || 3000;
@@ -28,7 +29,7 @@ if (!fs.existsSync(DATA_FILE)) {
     if (fs.existsSync(seedUploads)) for (const f of fs.readdirSync(seedUploads)) fs.copyFileSync(path.join(seedUploads, f), path.join(UPLOAD_DIR, f));
     console.log('Seeded', DATA_DIR, 'from the bundled data.json and uploads/');
   } else {
-    fs.writeFileSync(DATA_FILE, JSON.stringify({ teams: [], rounds: [], matches: [], players: [], staff: [], gallery: [], news: [] }, null, 2));
+    fs.writeFileSync(DATA_FILE, JSON.stringify({ teams: [], rounds: [], matches: [], players: [], staff: [], gallery: [], news: [], inbox: [] }, null, 2));
   }
 }
 
@@ -161,6 +162,7 @@ function sanitize(d) {
     name: str(t.name, 40) || 'Unnamed team',
     color: /^#[0-9a-f]{6}$/i.test(t.color) ? t.color : '#1b57c4',
     logo: okImage(t.logo) ? t.logo : '',
+    code: str(t.code, 12),   // short code the Discord bot uses for this team, e.g. GV
     gm: str(t.gm, 40),
     am: str(t.am, 40),
   }));
@@ -219,10 +221,46 @@ function sanitize(d) {
   return { teams, rounds, matches, players, staff, gallery, news, bracket };
 }
 
+const BOT_TOKEN = (process.env.BOT_TOKEN || '').trim();
+const writeData = d => {
+  fs.writeFileSync(DATA_FILE + '.tmp', JSON.stringify(d, null, 2));
+  fs.renameSync(DATA_FILE + '.tmp', DATA_FILE);
+};
+
+// A result sent by the Discord bot. Anything unexpected is rejected, nothing is guessed.
+// Blue = away = team A of a match, red = home = team B (same order the bot uses).
+function cleanBotResult(r) {
+  if (!r || typeof r !== 'object') return null;
+  const id = String(r.match_id ?? '').trim();
+  if (!/^[A-Za-z0-9_-]{4,64}$/.test(id)) return null;
+  const blueCode = str(r.blue_code, 12), redCode = str(r.red_code, 12);
+  if (!blueCode || !redCode || blueCode.toLowerCase() === redCode.toLowerCase()) return null;
+  const rawGames = Array.isArray(r.games) ? r.games.slice(0, 3) : [];
+  if (rawGames.length < 2) return null;
+  const games = [];
+  for (const g of rawGames) {
+    const a = Number(g && g.blue), b = Number(g && g.red);
+    if (!Number.isInteger(a) || !Number.isInteger(b) || a < 0 || b < 0 || a > 99 || b > 99) return null;
+    games.push({ as: a, bs: b });
+  }
+  const round = Number.isInteger(r.round) && r.round >= 1 && r.round <= 9999 ? r.round : null;
+  const t = Number(r.played_at);
+  const played = Number.isFinite(t) && t > 0 ? new Date(t > 1e11 ? t : t * 1000) : new Date();
+  return {
+    id, blueCode, redCode,
+    blueName: str(r.blue_name, 40), redName: str(r.red_name, 40),
+    round, games,
+    playedAt: isNaN(played) ? new Date().toISOString() : played.toISOString(),
+    receivedAt: new Date().toISOString(),
+    url: /^https:\/\/(discord\.com|discordapp\.com)\//.test(String(r.message_url || '')) ? String(r.message_url).slice(0, 300) : '',
+  };
+}
+
 // What a visitor may see. Until the bracket is published, admins get everything, while everyone else gets no
 // `bracket` field and none of the matches or rounds that belong to it (they would leak the draft otherwise).
 function publicView(data, admin) {
   if (admin) return data;
+  data = { ...data }; delete data.inbox;   // results waiting for approval are admin-only
   const b = data.bracket;
   if (b && b.published === true) return data;
   const out = { ...data };
@@ -270,12 +308,49 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/data' && req.method === 'PUT') {
       if (!isAdmin(req)) return send(res, 401, { error: 'Not logged in' });
       const clean = sanitize(JSON.parse(await readBody(req)));
-      fs.writeFileSync(DATA_FILE + '.tmp', JSON.stringify(clean, null, 2));
-      fs.renameSync(DATA_FILE + '.tmp', DATA_FILE);
+      // Results from the bot are owned by the server, not by whatever the admin page had loaded: keep the inbox
+      // exactly as it is on disk right now, minus the ones that were just approved (they are matches now).
+      // (Read and write happen with no await in between, so a bot result arriving at the same time is not lost.)
+      let current = {};
+      try { current = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch {}
+      const approved = new Set(clean.matches.map(m => m.id));
+      clean.inbox = (Array.isArray(current.inbox) ? current.inbox : []).filter(x => !approved.has(x.id));
+      writeData(clean);
       // remove uploaded images no team, staff member or gallery entry uses any more
       const used = new Set([...clean.teams.map(t => t.logo), ...clean.staff.map(s => s.photo), ...clean.gallery.map(g => g.photo)].map(u => path.basename(u || '')));
       for (const f of fs.readdirSync(UPLOAD_DIR)) if (!used.has(f)) fs.unlink(path.join(UPLOAD_DIR, f), () => {});
       return send(res, 200, clean);
+    }
+    // ---- Discord bot: sends a confirmed result, which waits in the inbox until an admin approves it ----
+    if (p === '/api/bot/result' && req.method === 'POST') {
+      if (!BOT_TOKEN) return send(res, 503, { error: 'The bot connection is not enabled on this site' });
+      const key = 'bot:' + clientIp(req);
+      const f = fails.get(key) || { n: 0, until: 0 };
+      if (f.until > Date.now()) return send(res, 429, { error: 'Too many attempts. Try again later.' });
+      const given = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+      if (!safeEq(given, BOT_TOKEN)) {
+        f.n++; if (f.n >= 10) { f.until = Date.now() + 5 * 60000; f.n = 0; }
+        fails.set(key, f);
+        return send(res, 401, { error: 'Wrong token' });
+      }
+      fails.delete(key);
+      let body;
+      try { body = JSON.parse(await readBody(req) || '{}'); } catch { return send(res, 400, { error: 'Invalid JSON' }); }
+      const item = cleanBotResult(body);
+      if (!item) return send(res, 400, { error: 'Invalid result: need match_id, blue_code, red_code and 2 or 3 games with blue/red scores' });
+      const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+      if ((data.matches || []).some(m => m.id === item.id)) return send(res, 200, { ok: true, status: 'already_approved' });
+      data.inbox = (Array.isArray(data.inbox) ? data.inbox : []).filter(x => x.id !== item.id).concat(item).slice(-200);
+      writeData(data);
+      return send(res, 200, { ok: true, status: 'queued' });
+    }
+    if (p === '/api/inbox/reject' && req.method === 'POST') {
+      if (!isAdmin(req)) return send(res, 401, { error: 'Not logged in' });
+      const { id } = JSON.parse(await readBody(req) || '{}');
+      const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+      data.inbox = (Array.isArray(data.inbox) ? data.inbox : []).filter(x => x.id !== id);
+      writeData(data);
+      return send(res, 200, { ok: true });
     }
     if (p === '/api/upload' && req.method === 'POST') {
       if (!isAdmin(req)) return send(res, 401, { error: 'Not logged in' });
