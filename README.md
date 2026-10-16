@@ -44,6 +44,21 @@ A match is a series of up to 3 games. First to 2 game wins takes the series.
 2-0 win: winner 3 points, loser 0. 2-1 win: winner 2 points, loser 1.
 Equal points are split by games won, then head-to-head, then series won, then goal difference.
 
+## Team pages
+
+Every team has its own page at `yoursite/team/<page-address>`, with place, series and game record, goals for and
+against, goal difference, points, playoff spot (when the bracket is visible), roster, results and upcoming matches.
+Team names in the standings, fixtures, bracket, leaders and team cards link to it.
+
+- **Page address:** set per team in **Admin > Teams** ("Page address" box, only a-z, 0-9 and -). Empty means the
+  default: the team's existing id, or its name for teams added later. It never changes when a team is renamed, so shared
+  links keep working. Changing it on purpose breaks links people already shared. Two teams with the same address get
+  `-2`. The old id address still works and redirects.
+- **Link previews:** the server fills in the team name, logo and a short description for Discord and search engines.
+- **Unknown address:** shows a "Team not found" page (HTTP 404).
+- **Playoff data stays private** while the bracket is a draft: the team page, like the rest of the site, only gets what
+  visitors are allowed to see.
+
 ## Discord bot results
 
 The result bot can send every confirmed `/result` to the website. They wait in **Admin > Matches > "Bot results

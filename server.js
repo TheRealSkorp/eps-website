@@ -163,9 +163,20 @@ function sanitize(d) {
     color: /^#[0-9a-f]{6}$/i.test(t.color) ? t.color : '#1b57c4',
     logo: okImage(t.logo) ? t.logo : '',
     code: str(t.code, 12),   // short code the Discord bot uses for this team, e.g. GV
+    slug: str(t.slug, 40),   // address of the team page: /team/<slug> (cleaned and made unique just below)
     gm: str(t.gm, 40),
     am: str(t.am, 40),
   }));
+  // Team page addresses: keep a saved slug, else the team id when it is already a clean slug (so existing teams keep
+  // URLs without any migration), else the name. A slug never changes just because a team is renamed.
+  const seenSlugs = new Set();
+  for (const t of teams) {
+    const idIsUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/.test(t.id);   // ids of teams added in the admin are random, so use the name for those
+    const base = slugify(t.slug) || (!idIsUuid && SLUG_RE.test(t.id) && t.id.length <= 40 ? t.id : '') || slugify(t.name) || 'team';
+    let s = base, n = 2;
+    while (seenSlugs.has(s)) { const suffix = '-' + n++; s = base.slice(0, 40 - suffix.length) + suffix; }
+    seenSlugs.add(s); t.slug = s;
+  }
   const ids = new Set(teams.map(t => t.id));
   const rounds = (Array.isArray(d.rounds) ? d.rounds : []).slice(0, 100).map(r => ({
     id: str(r.id, 40) || crypto.randomUUID(),
@@ -219,6 +230,42 @@ function sanitize(d) {
     bracket = { published: b.published === true, qf, sf, f, seeds };
   }
   return { teams, rounds, matches, players, staff, gallery, news, bracket };
+}
+
+// ---- team pages: /team/<slug> ----
+const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+const slugify = s => String(s ?? '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40).replace(/-+$/g, '');
+const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+// a team is found by its page address, or by its id (old links)
+const findTeam = (data, seg) => (data.teams || []).find(t => (t.slug || t.id) === seg) || (data.teams || []).find(t => t.id === seg);
+
+function teamPageHtml(req, team) {
+  let html = fs.readFileSync(path.join(DIR, 'index.html'), 'utf8');
+  const host = String(req.headers.host || '');
+  const proto = req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+  const origin = /^[a-z0-9.:-]+$/i.test(host) ? `${proto}://${host}` : '';
+  if (!team) {   // unknown team: same page, told to show a "not found" view and kept out of search engines
+    return html.replace(/<title>[^<]*<\/title>/, '<title>Team not found | EPS</title>')
+      .replace('</head>', '<meta name="robots" content="noindex"><script>window.__EPS_404=1</script></head>');
+  }
+  const url = `${origin}/team/${team.slug || team.id}`;
+  const title = `${team.name} | EPS`;
+  const desc = `${team.name}${team.gm ? ` (GM ${team.gm})` : ''} in the European Puck Series: roster, fixtures and results.`;
+  const image = origin ? origin + (team.logo || '/logo.png') : '';
+  const extra = [
+    origin ? `<link rel="canonical" href="${escHtml(url)}">` : '',
+    origin ? `<meta property="og:url" content="${escHtml(url)}">` : '',
+    image ? `<meta property="og:image" content="${escHtml(image)}">` : '',
+    '<meta property="og:site_name" content="European Puck Series">',
+    '<meta name="twitter:card" content="summary">',
+  ].join('');
+  return html
+    .replace(/<title>[^<]*<\/title>/, () => `<title>${escHtml(title)}</title>`)
+    .replace(/<meta name="description"[^>]*>/, () => `<meta name="description" content="${escHtml(desc)}">`)
+    .replace(/<meta property="og:title"[^>]*>/, () => `<meta property="og:title" content="${escHtml(title)}">`)
+    .replace(/<meta property="og:description"[^>]*>/, () => `<meta property="og:description" content="${escHtml(desc)}">`)
+    .replace('</head>', () => extra + '</head>');
 }
 
 const BOT_TOKEN = (process.env.BOT_TOKEN || '').trim();
@@ -366,6 +413,18 @@ const server = http.createServer(async (req, res) => {
       const f = uploadFile(p);
       if (!fs.existsSync(f)) return send(res, 404, { error: 'Not found' });
       return send(res, 200, fs.readFileSync(f), IMG_TYPES[p.split('.').pop()], { 'Cache-Control': 'public, max-age=31536000, immutable' });
+    }
+    // team pages: the same page for every team, with that team's title and link preview filled in
+    const tm = p.match(/^\/team\/([^/]+)\/?$/);
+    if (tm && (req.method === 'GET' || req.method === 'HEAD')) {
+      let seg = ''; try { seg = decodeURIComponent(tm[1]).toLowerCase(); } catch {}
+      const data = publicView(JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')), false);
+      const team = /^[a-z0-9-]{1,40}$/.test(seg) ? findTeam(data, seg) : null;
+      const html = { 'Cache-Control': 'no-cache', 'Content-Type': 'text/html; charset=utf-8' };
+      if (!team) return send(res, 404, teamPageHtml(req, null), html['Content-Type'], { 'Cache-Control': 'no-cache' });
+      const canonical = team.slug || team.id;
+      if (seg !== canonical) { res.writeHead(301, { Location: '/team/' + canonical, 'Cache-Control': 'no-cache' }); return res.end(); }
+      return send(res, 200, teamPageHtml(req, team), html['Content-Type'], { 'Cache-Control': 'no-cache' });
     }
     const s = STATIC[p];
     if (s && req.method === 'GET') {

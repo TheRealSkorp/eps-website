@@ -160,26 +160,38 @@ window.onbeforeunload=()=>dirty?'Unsaved changes':undefined;
 
 const teamOpts=sel=>data.teams.map(t=>`<option value="${esc(t.id)}"${t.id===sel?' selected':''}>${esc(t.name)}</option>`).join('');
 
+const slugifyC=s=>String(s||'').normalize('NFKD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
 function render(){
   const P=$('#panel');
   const mt=document.querySelector('#tabs [data-t="matches"]');
   if(mt)mt.textContent='Matches'+(data.inbox&&data.inbox.length?` (${data.inbox.length} new)`:'');
   if(tab==='teams'){
+    // read-only numbers from the standings table (same calculation as the website; playoff matches excluded)
+    const T=EPS.compute(data,EPS.playoffRoundIds(data));
+    const anyPlayed=T.sorted.some(r=>r.mp>0);
+    const statsLine=t=>{
+      const r=T.S[t.id],place=T.sorted.findIndex(x=>x.t.id===t.id)+1;
+      if(!r||!anyPlayed)return `<a class="hint" href="/team/${esc(t.slug||t.id)}" target="_blank" rel="noopener">View team page</a> &nbsp; <span class="hint">No games played yet</span>`;
+      const gd=r.gf-r.ga;
+      return `<a class="hint" href="/team/${esc(t.slug||t.id)}" target="_blank" rel="noopener">View team page</a> &nbsp; <span class="hint"><strong>Place ${place}</strong> of ${T.sorted.length} &nbsp; Goals for <strong>${r.gf}</strong> &nbsp; Goals against <strong>${r.ga}</strong> &nbsp; Goal difference <strong>${gd>0?'+':''}${gd}</strong> &nbsp; Points <strong>${r.pts}</strong></span>`;
+    };
     P.innerHTML=`<div class="card"><h2>Teams</h2>${data.teams.map((t,i)=>`
       <div class="row"><div class="logo-prev">${t.logo?`<img src="${esc(t.logo)}" alt="">`:'No logo'}</div>
       <div style="flex:1;min-width:260px;display:grid;gap:8px">
         <input type="text" data-l="teams" data-i="${i}" data-k="name" value="${esc(t.name)}" placeholder="Team name" style="width:100%">
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <input type="text" data-l="teams" data-i="${i}" data-k="code" value="${esc(t.code||'')}" placeholder="Bot code, e.g. GV" maxlength="12" style="flex:0 1 150px;min-width:110px" title="The short team code the Discord bot uses">
+          <input type="text" data-l="teams" data-i="${i}" data-k="slug" value="${esc(t.slug||'')}" placeholder="${esc(slugifyC(t.name)||'page-address')}" maxlength="40" style="flex:1 1 170px;min-width:140px" title="Page address: the team page is /team/ followed by this. Changing it later breaks links people already shared." aria-label="Team page address">
           <input type="text" data-l="teams" data-i="${i}" data-k="gm" value="${esc(t.gm)}" placeholder="GM" maxlength="40" style="flex:1;min-width:110px">
           <input type="text" data-l="teams" data-i="${i}" data-k="am" value="${esc(t.am)}" placeholder="AM" maxlength="40" style="flex:1;min-width:110px">
           <label class="chk">Roster colour <input type="color" data-l="teams" data-i="${i}" data-k="color" value="${esc(t.color||'#1b57c4')}"></label>
         </div>
+        <div>${statsLine(t)}</div>
       </div>
       <button class="sec file">${t.logo?'Change logo':'Upload logo'}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-up="${i}"></button>${t.logo?`<button class="sec" data-rmlogo="${i}">Remove logo</button>`:''}
       <button class="del" data-del="teams" data-i="${i}">Delete</button></div>`).join('')||'<p class="hint">No teams yet.</p>'}
       <p style="margin-top:12px"><button data-add="teams">+ Add team</button></p>
-      <p class="hint" style="margin-top:10px">Logos: PNG, JPG, WEBP or GIF up to 8 MB, ideally square with a transparent background. Uploading takes effect after you press Save. GM and AM are shown at the top of the roster, and the colour is the bar on its left side.</p><p class="hint" style="margin-top:6px">Deleting a team also removes its matches and players.</p></div>`;
+      <p class="hint" style="margin-top:10px">Logos: PNG, JPG, WEBP or GIF up to 8 MB, ideally square with a transparent background. Uploading takes effect after you press Save. GM and AM are shown at the top of the roster, and the colour is the bar on its left side. Every team has its own page at /team/ followed by its page address (leave it empty to use the default). Changing a page address later breaks links people already shared.</p><p class="hint" style="margin-top:6px">Deleting a team also removes its matches and players.</p></div>`;
   }
   if(tab==='matches'){
     const few=data.teams.length<2;
@@ -336,6 +348,7 @@ function render(){
 $('#panel').addEventListener('input',e=>{
   const el=e.target,l=el.dataset.l;if(!l)return;
   const o=data[l][+el.dataset.i],k=el.dataset.k;
+  if(el.dataset.k==='slug')el.value=el.value.toLowerCase().replace(/[\s_]+/g,'-').replace(/[^a-z0-9-]/g,'');   // page addresses only use a-z, 0-9 and -
   const val=el.type==='checkbox'?el.checked:el.hasAttribute('data-n')?(el.value===''?null:+el.value):el.value;
   if(el.dataset.g!==undefined)o.games[+el.dataset.g][k]=val;else o[k]=val;
   if(l==='matches')refreshMatch(+el.dataset.i);
@@ -426,7 +439,7 @@ $('#panel').addEventListener('click',e=>{
   if(b.dataset.rmlogo!==undefined){data.teams[+b.dataset.rmlogo].logo='';dirty=true;msg('Unsaved changes');render();return}
   if(b.dataset.add){
     const l=b.dataset.add,first=data.teams[0]?.id,second=data.teams[1]?.id;
-    if(l==='teams')data.teams.push({id:uid(),name:'New team',color:'#1b57c4',logo:'',gm:'',am:''});
+    if(l==='teams')data.teams.push({id:uid(),name:'New team',color:'#1b57c4',logo:'',gm:'',am:'',code:'',slug:''});
     if(l==='matches')data.matches.push({id:uid(),date:'',round:b.dataset.round||'',a:first,b:second,games:emptyGames()});
     if(l==='news')data.news.unshift({id:uid(),title:'',body:'',date:new Date().toISOString().slice(0,10),pinned:false,bar:false});
     if(l==='staff')data.staff.push({id:uid(),name:'',role:'Moderator',bio:'',photo:''});
