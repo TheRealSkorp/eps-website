@@ -187,11 +187,15 @@ function render(){
           <label class="chk">Roster colour <input type="color" data-l="teams" data-i="${i}" data-k="color" value="${esc(t.color||'#1b57c4')}"></label>
         </div>
         <div>${statsLine(t)}</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div class="logo-prev" style="width:120px;height:68px">${t.photo?`<img src="${esc(t.photo)}" alt="" style="object-fit:cover">`:'No team photo'}</div>
+          <button class="sec file">${t.photo?'Change team photo':'Upload team photo'}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-up="${i}" data-upl="teamphoto"></button>${t.photo?`<button class="sec" data-rmteamphoto="${i}">Remove team photo</button>`:''}
+        </div>
       </div>
       <button class="sec file">${t.logo?'Change logo':'Upload logo'}<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" data-up="${i}"></button>${t.logo?`<button class="sec" data-rmlogo="${i}">Remove logo</button>`:''}
       <button class="del" data-del="teams" data-i="${i}">Delete</button></div>`).join('')||'<p class="hint">No teams yet.</p>'}
       <p style="margin-top:12px"><button data-add="teams">+ Add team</button></p>
-      <p class="hint" style="margin-top:10px">Logos: PNG, JPG, WEBP or GIF up to 8 MB, ideally square with a transparent background. Uploading takes effect after you press Save. GM and AM are shown at the top of the roster, and the colour is the bar on its left side. Every team has its own page at /team/ followed by its page address (leave it empty to use the default). Changing a page address later breaks links people already shared.</p><p class="hint" style="margin-top:6px">Deleting a team also removes its matches and players.</p></div>`;
+      <p class="hint" style="margin-top:10px">Logos: PNG, JPG, WEBP or GIF up to 8 MB, ideally square with a transparent background. Team photo: a picture of the whole team, best in landscape (wider than tall); it shows at the top of the roster and on the team page. Uploading takes effect after you press Save. GM and AM are shown at the top of the roster, and the colour is the bar on its left side. Every team has its own page at /team/ followed by its page address (leave it empty to use the default). Changing a page address later breaks links people already shared.</p><p class="hint" style="margin-top:6px">Deleting a team also removes its matches and players.</p></div>`;
   }
   if(tab==='matches'){
     const few=data.teams.length<2;
@@ -389,8 +393,8 @@ $('#panel').addEventListener('change',async e=>{
   const f=el.files[0];if(!f)return;
   msg('Uploading…');
   try{const r=await api('/api/upload',{method:'POST',headers:{'Content-Type':f.type||'application/octet-stream'},body:f});
-    const staff=el.dataset.upl==='staff';
-    data[staff?'staff':'teams'][+el.dataset.up][staff?'photo':'logo']=r.url;dirty=true;msg('Image uploaded – press Save');render()}
+    const staff=el.dataset.upl==='staff',teamPhoto=el.dataset.upl==='teamphoto';
+    data[staff?'staff':'teams'][+el.dataset.up][staff||teamPhoto?'photo':'logo']=r.url;dirty=true;msg('Image uploaded – press Save');render()}
   catch(err){msg(err.message,'err')}
 });
 $('#panel').addEventListener('click',e=>{
@@ -437,9 +441,10 @@ $('#panel').addEventListener('click',e=>{
     return}
   if(b.dataset.rmphoto!==undefined){data.staff[+b.dataset.rmphoto].photo='';dirty=true;msg('Unsaved changes');render();return}
   if(b.dataset.rmlogo!==undefined){data.teams[+b.dataset.rmlogo].logo='';dirty=true;msg('Unsaved changes');render();return}
+  if(b.dataset.rmteamphoto!==undefined){data.teams[+b.dataset.rmteamphoto].photo='';dirty=true;msg('Unsaved changes');render();return}
   if(b.dataset.add){
     const l=b.dataset.add,first=data.teams[0]?.id,second=data.teams[1]?.id;
-    if(l==='teams')data.teams.push({id:uid(),name:'New team',color:'#1b57c4',logo:'',gm:'',am:'',code:'',slug:''});
+    if(l==='teams')data.teams.push({id:uid(),name:'New team',color:'#1b57c4',logo:'',photo:'',gm:'',am:'',code:'',slug:''});
     if(l==='matches')data.matches.push({id:uid(),date:'',round:b.dataset.round||'',a:first,b:second,games:emptyGames()});
     if(l==='news')data.news.unshift({id:uid(),title:'',body:'',date:new Date().toISOString().slice(0,10),pinned:false,bar:false});
     if(l==='staff')data.staff.push({id:uid(),name:'',role:'Moderator',bio:'',photo:''});

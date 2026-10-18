@@ -162,6 +162,7 @@ function sanitize(d) {
     name: str(t.name, 40) || 'Unnamed team',
     color: /^#[0-9a-f]{6}$/i.test(t.color) ? t.color : '#1b57c4',
     logo: okImage(t.logo) ? t.logo : '',
+    photo: okImage(t.photo) ? t.photo : '',   // optional picture of the whole team
     code: str(t.code, 12),   // short code the Discord bot uses for this team, e.g. GV
     slug: str(t.slug, 40),   // address of the team page: /team/<slug> (cleaned and made unique just below)
     gm: str(t.gm, 40),
@@ -240,19 +241,27 @@ const escHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '
 // a team is found by its page address, or by its id (old links)
 const findTeam = (data, seg) => (data.teams || []).find(t => (t.slug || t.id) === seg) || (data.teams || []).find(t => t.id === seg);
 
-function teamPageHtml(req, team) {
-  let html = fs.readFileSync(path.join(DIR, 'index.html'), 'utf8');
+// ---- separate pages: /standings, /matches, ... The same index.html; the page picks its view from the address. ----
+const PAGES = {
+  news: ['News', 'News and announcements from the European Puck Series.'],
+  matches: ['Matches', 'Fixtures and results of the European Puck Series, round by round.'],
+  gallery: ['Gallery', 'Photos from the matches of the European Puck Series.'],
+  standings: ['Standings', 'The European Puck Series table: points, series, games and goals of every team.'],
+  playoffs: ['Playoffs', 'The European Puck Series playoff bracket: the top 8 teams in a knockout.'],
+  teams: ['Teams', 'Every team in the European Puck Series, with rosters, GMs and AMs.'],
+  leaders: ['Leaders', 'European Puck Series leaders: top goal scorers, assists and goalies.'],
+  rules: ['Rules', 'The rules of the European Puck Series community.'],
+  staff: ['Staff', 'The people who run the European Puck Series.'],
+};
+
+// index.html with the title, description and link preview of one page filled in
+function pageHtml(req, { title, desc, route, image }) {
+  const html = fs.readFileSync(path.join(DIR, 'index.html'), 'utf8');
   const host = String(req.headers.host || '');
   const proto = req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
   const origin = /^[a-z0-9.:-]+$/i.test(host) ? `${proto}://${host}` : '';
-  if (!team) {   // unknown team: same page, told to show a "not found" view and kept out of search engines
-    return html.replace(/<title>[^<]*<\/title>/, '<title>Team not found | EPS</title>')
-      .replace('</head>', '<meta name="robots" content="noindex"><script>window.__EPS_404=1</script></head>');
-  }
-  const url = `${origin}/team/${team.slug || team.id}`;
-  const title = `${team.name} | EPS`;
-  const desc = `${team.name}${team.gm ? ` (GM ${team.gm})` : ''} in the European Puck Series: roster, fixtures and results.`;
-  const image = origin ? origin + (team.logo || '/logo.png') : '';
+  const url = origin + route;
+  image = origin ? origin + (image || '/logo.png') : '';
   const extra = [
     origin ? `<link rel="canonical" href="${escHtml(url)}">` : '',
     origin ? `<meta property="og:url" content="${escHtml(url)}">` : '',
@@ -266,6 +275,20 @@ function teamPageHtml(req, team) {
     .replace(/<meta property="og:title"[^>]*>/, () => `<meta property="og:title" content="${escHtml(title)}">`)
     .replace(/<meta property="og:description"[^>]*>/, () => `<meta property="og:description" content="${escHtml(desc)}">`)
     .replace('</head>', () => extra + '</head>');
+}
+
+function teamPageHtml(req, team) {
+  if (!team) {   // unknown team: same page, told to show a "not found" view and kept out of search engines
+    return fs.readFileSync(path.join(DIR, 'index.html'), 'utf8')
+      .replace(/<title>[^<]*<\/title>/, '<title>Team not found | EPS</title>')
+      .replace('</head>', '<meta name="robots" content="noindex"><script>window.__EPS_404=1</script></head>');
+  }
+  return pageHtml(req, {
+    title: `${team.name} | EPS`,
+    desc: `${team.name}${team.gm ? ` (GM ${team.gm})` : ''} in the European Puck Series: roster, fixtures and results.`,
+    route: `/team/${team.slug || team.id}`,
+    image: team.logo,
+  });
 }
 
 const BOT_TOKEN = (process.env.BOT_TOKEN || '').trim();
@@ -364,7 +387,7 @@ const server = http.createServer(async (req, res) => {
       clean.inbox = (Array.isArray(current.inbox) ? current.inbox : []).filter(x => !approved.has(x.id));
       writeData(clean);
       // remove uploaded images no team, staff member or gallery entry uses any more
-      const used = new Set([...clean.teams.map(t => t.logo), ...clean.staff.map(s => s.photo), ...clean.gallery.map(g => g.photo)].map(u => path.basename(u || '')));
+      const used = new Set([...clean.teams.flatMap(t => [t.logo, t.photo]), ...clean.staff.map(s => s.photo), ...clean.gallery.map(g => g.photo)].map(u => path.basename(u || '')));
       for (const f of fs.readdirSync(UPLOAD_DIR)) if (!used.has(f)) fs.unlink(path.join(UPLOAD_DIR, f), () => {});
       return send(res, 200, clean);
     }
@@ -425,6 +448,12 @@ const server = http.createServer(async (req, res) => {
       const canonical = team.slug || team.id;
       if (seg !== canonical) { res.writeHead(301, { Location: '/team/' + canonical, 'Cache-Control': 'no-cache' }); return res.end(); }
       return send(res, 200, teamPageHtml(req, team), html['Content-Type'], { 'Cache-Control': 'no-cache' });
+    }
+    // section pages: /standings, /matches, ... (a trailing slash is allowed)
+    const pm = p.match(/^\/([a-z]+)\/?$/);
+    if (pm && Object.hasOwn(PAGES, pm[1]) && (req.method === 'GET' || req.method === 'HEAD')) {
+      const [name, desc] = PAGES[pm[1]];
+      return send(res, 200, pageHtml(req, { title: `${name} | EPS`, desc, route: '/' + pm[1] }), 'text/html; charset=utf-8', { 'Cache-Control': 'no-cache' });
     }
     const s = STATIC[p];
     if (s && req.method === 'GET') {

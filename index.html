@@ -188,6 +188,12 @@ body.team-mode main > :not(#teamPage){display:none!important}
 .team-hero .team-logo.ph{font-size:44px}
 .team-hero .line{font-size:18px}
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:18px}
+.team-photo{display:block;margin:4px 0 12px;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:var(--surface)}
+.team-photo img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;transition:transform .4s cubic-bezier(.16,1,.3,1)}
+.team-photo:hover img{transform:scale(1.02)}
+.tp-photo{margin:18px 0 0}
+.tp-photo img{aspect-ratio:21/9}
+@media (max-width:640px){.tp-photo img{aspect-ratio:16/9}}
 .tile{padding:18px 20px}
 .tile b{display:block;font-family:var(--disp);font-weight:800;font-size:46px;line-height:1;color:var(--accent)}
 .tile small{display:block;margin-top:6px;font-size:15px;color:var(--muted)}
@@ -590,31 +596,103 @@ dialog#lb::backdrop{background:rgba(3,4,9,.9)}
   .tile b{font-size:32px}
   .fx-score{font-size:22px}
 }
+
+/* ===== Separate pages: /standings, /matches, ... (data-page on <html> is set in the head) =====
+   Without JavaScript nothing is hidden, so the page falls back to one long scroll. */
+html[data-page]:not([data-page="home"]) main > .home-only{display:none}
+html[data-page="home"] main > section[data-pg]{display:none}
+html[data-page="team"] main > :not(#teamPage){display:none!important}
+html[data-page]:not([data-page="home"]):not([data-page="team"]) main > section[data-pg]{display:none;padding:72px 0 96px;min-height:calc(100dvh - 68px - 120px)}
+html[data-page="news"] main > #news,html[data-page="matches"] main > #matches,html[data-page="gallery"] main > #gallery,
+html[data-page="standings"] main > #standings,html[data-page="playoffs"] main > #bracket,html[data-page="teams"] main > #teams,
+html[data-page="leaders"] main > #players,html[data-page="rules"] main > #rules,html[data-page="staff"] main > #staff{display:block}
+html[data-page]:not([data-page="home"]) main > section[data-pg] h2{font-size:clamp(36px,5.4vw,68px)}
+
+/* home page summary */
+#home{padding:96px 0 104px}
+.home-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:30px}
+.hb{padding:22px 24px 14px;min-width:0}
+.hb-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:6px 12px;margin-bottom:8px}
+.hb-head h3{font-family:var(--label);font-size:13px;letter-spacing:.2em;text-transform:uppercase;color:#ff6fb5;white-space:nowrap}
+.hb-head a{font-family:var(--label);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--link);text-decoration:none;white-space:nowrap}
+.hb-head a::after{content:" \2192"}
+.hb-head a:hover{color:#fff}
+.hb .none{color:var(--muted);padding:14px 0 18px}
+.mm{display:grid;gap:8px;padding:14px 0}
+.mm + .mm,.sr + .sr,.nn + .nn{border-top:1px solid var(--line)}
+.mm-r{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:12px;align-items:center;font-family:var(--disp);font-weight:700;font-size:20px;text-transform:uppercase}
+.mm-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mm-r.lose{color:var(--muted)}
+.mm-s{font-family:var(--display);font-size:20px;font-weight:800;color:#fff;min-width:24px;text-align:right}
+.mm-r.lose .mm-s{color:var(--muted)}
+.mm-d{padding-left:46px;font-family:var(--label);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.sr{display:grid;grid-template-columns:28px 34px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0}
+.sr-n{font-family:var(--display);font-size:16px;color:var(--muted)}
+.sr:first-child .sr-n{color:#ff6fb5}
+.sr-t{font-family:var(--disp);font-weight:700;font-size:21px;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sr-p{font-family:var(--display);font-size:20px;color:#fff}
+.sr-p small{font-family:var(--label);font-size:10px;letter-spacing:.14em;color:var(--muted);margin-left:6px}
+.nn{display:block;padding:12px 0;color:inherit;text-decoration:none}
+.nn small{font-family:var(--label);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.nn b{display:block;font-family:var(--disp);font-size:22px;text-transform:uppercase;margin:2px 0 4px}
+.nn span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--muted);font-size:16px}
+.nn:hover b{color:#fff;text-decoration:underline;text-underline-offset:3px}
+.explore-h{margin-top:72px}
+.explore{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:26px}
+.xl{position:relative;display:block;padding:20px 22px;color:inherit;text-decoration:none;transition:transform .25s cubic-bezier(.16,1,.3,1),border-color .25s}
+.xl b{display:block;font-family:var(--display);font-size:17px;color:#fff;margin-bottom:6px}
+.xl b::after{content:"\2192";float:right;color:#ff6fb5;transition:transform .25s cubic-bezier(.16,1,.3,1)}
+.xl span{color:var(--muted);font-size:15px;line-height:1.4}
+.xl:hover{transform:translateY(-3px);border-color:rgba(214,16,111,.55)}
+.xl:hover b::after{transform:translateX(4px)}
+@media (max-width:860px){
+  .home-grid{grid-template-columns:minmax(0,1fr)}
+  #home{padding:72px 0 80px}
+  html[data-page]:not([data-page="home"]):not([data-page="team"]) main > section[data-pg]{padding:48px 0 72px}
+  .hb{padding:20px 18px 12px}
+  .sr{grid-template-columns:20px 34px minmax(0,1fr) auto;gap:10px}
+  .sr-p small{display:none}
+}
 </style>
-<script>document.documentElement.classList.add('js')</script>
+<script>
+// Which page this is (/standings, /matches, ... or the home page), set before anything is drawn so the other
+// sections never flash. Old links like /#standings are sent on to /standings.
+(function(){
+  var d=document.documentElement;d.classList.add('js');
+  var pages=['news','matches','gallery','standings','playoffs','teams','leaders','rules','staff'];
+  var oldHash={bracket:'playoffs',players:'leaders'};
+  var p=location.pathname.replace(/\/+$/,'').slice(1).toLowerCase();
+  if(!p||p==='index.html'){
+    var h=location.hash.slice(1).toLowerCase();h=oldHash[h]||h;
+    if(pages.indexOf(h)>=0){location.replace('/'+h);return}
+    d.setAttribute('data-page','home');
+  }else if(/^team\//.test(p))d.setAttribute('data-page','team');
+  else d.setAttribute('data-page',pages.indexOf(p)>=0?p:'home');
+})();
+</script>
 </head>
 <body>
 <div class="topbar" id="topbar" role="region" aria-label="Announcement" hidden>
   <div class="wrap">
     <span class="tag">News</span>
-    <span class="msg"><strong id="topbarTitle"></strong> <a href="#news">Read more</a></span>
+    <span class="msg"><strong id="topbarTitle"></strong> <a href="/news">Read more</a></span>
     <button type="button" id="topbarClose" aria-label="Close this announcement">Close</button>
   </div>
 </div>
 <header>
   <div class="wrap nav">
-    <a class="brand" href="#top" aria-label="EPS home"><span class="logo-plate"><img src="/logo.png" alt=""></span><span>EPS</span></a>
+    <a class="brand" href="/" aria-label="EPS home"><span class="logo-plate"><img src="/logo.png" alt=""></span><span>EPS</span></a>
     <nav id="menu" aria-label="Main">
       <ul>
-        <li id="navNews" hidden><a href="#news">News</a></li>
-        <li><a href="#matches">Matches</a></li>
-        <li><a href="#gallery">Gallery</a></li>
-        <li><a href="#standings">Standings</a></li>
-        <li id="navBracket" hidden><a href="#bracket">Playoffs</a></li>
-        <li><a href="#teams">Teams</a></li>
-        <li><a href="#players">Leaders</a></li>
-        <li><a href="#rules">Rules</a></li>
-        <li><a href="#staff">Staff</a></li>
+        <li id="navNews" hidden><a href="/news">News</a></li>
+        <li><a href="/matches">Matches</a></li>
+        <li><a href="/gallery">Gallery</a></li>
+        <li><a href="/standings">Standings</a></li>
+        <li id="navBracket" hidden><a href="/playoffs">Playoffs</a></li>
+        <li><a href="/teams">Teams</a></li>
+        <li><a href="/leaders">Leaders</a></li>
+        <li><a href="/rules">Rules</a></li>
+        <li><a href="/staff">Staff</a></li>
       </ul>
     </nav>
     <div class="nav-right">
@@ -627,7 +705,7 @@ dialog#lb::backdrop{background:rgba(3,4,9,.9)}
 <main id="top">
   <section id="teamPage" hidden></section>
 
-  <div class="hero">
+  <div class="hero home-only">
     <div class="wrap">
       <div>
         <span class="eyebrow">Season 1 on Steam</span>
@@ -635,41 +713,53 @@ dialog#lb::backdrop{background:rgba(3,4,9,.9)}
         <p class="lead">A competitive league for Puck on Steam. Four skaters and a goalie per team, one cup to win.</p>
         <div class="cta">
           <a class="btn go" href="https://discord.gg/Ucq6UNE4qb" target="_blank" rel="noopener">Join the Discord</a>
-          <a class="btn ghost" href="#standings">View standings</a>
+          <a class="btn ghost" href="/standings">View standings</a>
         </div>
       </div>
       <div class="hero-logo"><img src="/logo.png" alt="European Puck Series logo" width="500" height="500"></div>
     </div>
   </div>
 
-  <div class="facts"><div class="wrap">
+  <div class="facts home-only"><div class="wrap">
     <div><b id="sTeams">0</b><small>Teams registered</small></div>
     <div><b id="sGames">0</b><small>Games played</small></div>
     <div><b>4+1</b><small>Skaters plus goalie</small></div>
     <div><b id="sGoals">0</b><small>Goals scored</small></div>
   </div></div>
 
-  <section id="news" class="tint" hidden><div class="wrap rv">
+  <section id="home" class="home-only"><div class="wrap rv">
+    <h2>Latest from the league</h2>
+    <div class="home-grid">
+      <div class="card hb"><div class="hb-head"><h3>Next up</h3><a href="/matches">All matches</a></div><div id="hbNext"></div></div>
+      <div class="card hb"><div class="hb-head"><h3>Latest results</h3><a href="/matches">All results</a></div><div id="hbDone"></div></div>
+      <div class="card hb"><div class="hb-head"><h3>Top of the table</h3><a href="/standings">Full standings</a></div><div id="hbTable"></div></div>
+      <div class="card hb" id="hbNewsCard" hidden><div class="hb-head"><h3>News</h3><a href="/news">All news</a></div><div id="hbNews"></div></div>
+    </div>
+    <h2 class="explore-h">Explore</h2>
+    <div class="explore" id="explore"></div>
+  </div></section>
+
+  <section id="news" data-pg="news" class="tint" hidden><div class="wrap rv">
     <h2>News</h2>
     <p class="sub">Important messages from the league.</p>
     <div id="newsList" class="news-list"></div>
     <p id="newsMore" hidden style="margin-top:22px"><button type="button" class="btn ghost" id="newsMoreBtn">Show older news</button></p>
   </div></section>
 
-  <section id="matches"><div class="wrap rv">
+  <section id="matches" data-pg="matches"><div class="wrap rv">
     <h2>Fixtures and results</h2>
     <p class="sub">Every game of the season, in the order they are played.</p>
     <div id="matchList"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
   </div></section>
 
-  <section id="gallery" class="tint"><div class="wrap rv">
+  <section id="gallery" data-pg="gallery" class="tint"><div class="wrap rv">
     <h2>Gallery</h2>
     <p class="sub">Photos from the matches.</p>
     <div id="galleryList"></div>
     <p id="galleryMore" hidden style="margin-top:26px"><button type="button" class="btn ghost" id="galleryMoreBtn">Show more photos</button></p>
   </div></section>
 
-  <section id="standings"><div class="wrap rv">
+  <section id="standings" data-pg="standings"><div class="wrap rv">
     <h2>Standings</h2>
     <div class="card tbl" style="margin-top:28px"><table>
       <thead><tr><th scope="col">#</th><th scope="col">Team</th><th scope="col" title="Series played">SP</th><th scope="col" title="Series won">SW</th><th scope="col" title="Series lost">SL</th><th scope="col" title="Matches played">MP</th><th scope="col" title="Matches won">MW</th><th scope="col" title="Matches lost">ML</th><th scope="col">GF</th><th scope="col">GA</th><th scope="col">PTS</th></tr></thead>
@@ -678,7 +768,7 @@ dialog#lb::backdrop{background:rgba(3,4,9,.9)}
     <p class="note"><span class="po-key" aria-hidden="true"></span>Green rows are the playoff places (top 8). A series won 2-0 earns the winner 3 points. A series won 2-1 earns the winner 2 points and the loser 1 point. Equal points are split by matches won, then head-to-head, then series won, then goal difference.</p>
   </div></section>
 
-  <section id="bracket" class="bracket-sec" hidden><div class="wrap rv">
+  <section id="bracket" data-pg="playoffs" class="bracket-sec" hidden><div class="wrap rv">
     <h2>Playoffs</h2>
     <p class="sub" id="bracketSub">The top 8 teams of the table meet in a knockout bracket. Seeds follow the standings.</p>
     <div id="bracketDraft" class="b-draft" hidden><strong>Draft:</strong> only admins can see this. Publish it in the admin under Bracket when the playoffs begin.</div>
@@ -686,13 +776,13 @@ dialog#lb::backdrop{background:rgba(3,4,9,.9)}
     <div id="bracketTree" class="bracket"></div>
   </div></section>
 
-  <section id="teams" class="tint"><div class="wrap rv">
+  <section id="teams" data-pg="teams" class="tint"><div class="wrap rv">
     <h2>Teams</h2>
     <p class="sub">The clubs fighting for the cup.</p>
     <div class="teams" id="teamList"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
   </div></section>
 
-  <section id="players"><div class="wrap rv">
+  <section id="players" data-pg="leaders"><div class="wrap rv">
     <h2>Leaders</h2>
     <div class="tabs" role="tablist" aria-label="Stat category" style="margin-top:28px">
       <button role="tab" id="tab-g" aria-selected="true" data-k="g">Goals</button>
@@ -702,7 +792,7 @@ dialog#lb::backdrop{background:rgba(3,4,9,.9)}
     <div class="card lead-list" id="leaders" role="tabpanel"></div>
   </div></section>
 
-  <section id="rules" class="tint"><div class="wrap rules-grid rv">
+  <section id="rules" data-pg="rules" class="tint"><div class="wrap rules-grid rv">
     <h2>Rules</h2>
     <div>
       <div class="rule"><h3>Be respectful</h3><p>Treat all members with kindness and respect. Harassment, hate speech, personal attacks and discrimination of any kind will not be tolerated. This server is international, so the only language allowed is English.</p></div>
@@ -715,7 +805,7 @@ dialog#lb::backdrop{background:rgba(3,4,9,.9)}
     </div>
   </div></section>
 
-  <section id="staff"><div class="wrap rv">
+  <section id="staff" data-pg="staff"><div class="wrap rv">
     <h2>Staff</h2>
     <p class="sub">The people who run the European Puck Series.</p>
     <div id="staffList"></div>
@@ -766,18 +856,16 @@ const burger=document.getElementById("burger"),menu=document.getElementById("men
 burger.onclick=()=>{const o=menu.classList.toggle("open");burger.setAttribute("aria-expanded",o)};
 menu.addEventListener("click",e=>{if(e.target.tagName==="A"){menu.classList.remove("open");burger.setAttribute("aria-expanded","false")}});
 
-// header shadow once the page is scrolled, and the current section highlighted in the menu
+// header shadow once the page is scrolled, and the current page highlighted in the menu
 const hdr=document.querySelector("header");
 const onScroll=()=>hdr.classList.toggle("scrolled",window.scrollY>8);
 onScroll();window.addEventListener("scroll",onScroll,{passive:true});
-if("IntersectionObserver"in window){
-  const links=[...document.querySelectorAll("nav a")];
-  const spy=new IntersectionObserver(es=>es.forEach(e=>{
-    const a=links.find(l=>l.getAttribute("href")==="#"+e.target.id);
-    if(e.isIntersecting)links.forEach(l=>l.classList.toggle("active",l===a));
-    else if(a)a.classList.remove("active");
-  }),{rootMargin:"-45% 0px -50% 0px"});
-  document.querySelectorAll("main section[id]").forEach(s=>spy.observe(s));
+const PAGE=document.documentElement.dataset.page||"home";
+document.querySelectorAll("nav a").forEach(a=>{if(a.getAttribute("href")==="/"+PAGE){a.classList.add("active");a.setAttribute("aria-current","page")}});
+if(PAGE!=="home"&&PAGE!=="team"){
+  // on its own page the section title is the main heading
+  const h=document.querySelector(`main > section[data-pg="${PAGE}"] h2`);
+  if(h){h.setAttribute("role","heading");h.setAttribute("aria-level","1")}
 }
 const reduceMotion=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const countUp=(el,n)=>{
@@ -836,6 +924,8 @@ function render(D){
       `<div class="b-col"><h3>Final</h3><div class="b-body">
          <div class="b-cell in">${card(BR.final)}</div></div>
          ${BR.champion?`<div class="b-champ">Champion<strong>${esc(BR.champion.name)}</strong></div>`:""}</div>`;
+  }else{
+    document.getElementById("bracketTree").innerHTML='<div class="empty"><b>Playoffs not started yet</b>The bracket appears here when the regular season is over.</div>';
   }
 
   // fixtures
@@ -903,10 +993,11 @@ function render(D){
     return `<span class="tstats"><span><b>${place}</b> Place</span><span><b>${r.gf}</b> Goals for</span><span><b>${r.ga}</b> Goals against</span></span>`;
   };
   const teamLogo=t=>t.logo?`<img class="team-logo" src="${esc(t.logo)}" alt="${esc(t.name)} logo">`:`<span class="team-logo ph" aria-hidden="true">${esc(abbr(t.name))}</span>`;
+  const teamPhoto=(t,cls="")=>t.photo?`<a class="team-photo ${cls}" href="${esc(t.photo)}" target="_blank" rel="noopener" aria-label="Open the ${esc(t.name)} team photo"><img src="${esc(t.photo)}" alt="${esc(t.name)} team photo" loading="lazy" decoding="async"></a>`:"";
   document.getElementById("teamList").innerHTML=D.teams.map(t=>{
     const {n,goalies,skaters,gms,ams}=rosterOf(t);
     const logo=teamLogo(t);
-    return `<article class="card team-card" style="--bar:${esc(t.color||"")}"><button type="button" class="team-head" aria-expanded="false" aria-controls="roster-${esc(t.id)}"><span class="th-main"><strong class="tn">${esc(t.name)}</strong>${who("GM",gms)}${who("AM",ams)}${teamStats(t)}<span class="count">${n.length?`${n.length} players, ${goalies.length} ${goalies.length===1?"goalie":"goalies"}. Tap to show the roster`:"Roster to be announced"}</span></span>${logo}</button><div class="roster-wrap" id="roster-${esc(t.id)}"><div><a class="tlink-btn" href="${teamHref(t)}">Open team page</a><h4>Goalies</h4>${list(goalies)}<h4>Skaters</h4>${list(skaters)}</div></div></article>`}).join("")||'<div class="empty"><b>No teams yet</b>Be the first to register.</div>';
+    return `<article class="card team-card" style="--bar:${esc(t.color||"")}"><button type="button" class="team-head" aria-expanded="false" aria-controls="roster-${esc(t.id)}"><span class="th-main"><strong class="tn">${esc(t.name)}</strong>${who("GM",gms)}${who("AM",ams)}${teamStats(t)}<span class="count">${n.length?`${n.length} players, ${goalies.length} ${goalies.length===1?"goalie":"goalies"}. Tap to show the roster`:"Roster to be announced"}</span></span>${logo}</button><div class="roster-wrap" id="roster-${esc(t.id)}"><div>${teamPhoto(t)}<a class="tlink-btn" href="${teamHref(t)}">Open team page</a><h4>Goalies</h4>${list(goalies)}<h4>Skaters</h4>${list(skaters)}</div></div></article>`}).join("")||'<div class="empty"><b>No teams yet</b>Be the first to register.</div>';
 
   document.querySelectorAll(".team-head").forEach(b=>b.addEventListener("click",()=>{
     const card=b.closest(".team-card"),open=card.classList.toggle("open");
@@ -950,6 +1041,8 @@ function render(D){
       document.getElementById("topbarTitle").textContent=barPost.title;bar.hidden=false;
       document.getElementById("topbarClose").onclick=()=>{bar.hidden=true;try{localStorage.setItem("eps_bar_closed",barPost.id)}catch(e){}};
     }
+  }else{
+    document.getElementById("newsList").innerHTML='<div class="empty"><b>No news yet</b>Announcements from the league will be posted here.</div>';
   }
 
   // gallery: newest first, 12 at a time, click for a full-size viewer
@@ -990,14 +1083,12 @@ function render(D){
   const TEAM_ROUTE=location.pathname.match(/^\/team\/([^/]+)\/?$/);
   function renderTeamPage(){
     document.body.classList.add("team-mode");
-    // header links lead to the sections of the home page
-    document.querySelectorAll('header a[href^="#"], .topbar a[href^="#"]').forEach(a=>a.setAttribute("href","/"+a.getAttribute("href").replace(/^#top$/,"")));
     const page=document.getElementById("teamPage");page.hidden=false;
     let seg="";try{seg=decodeURIComponent(TEAM_ROUTE[1]).toLowerCase()}catch(e){}
     const t=window.__EPS_404?null:(D.teams.find(x=>slugOf(x)===seg)||D.teams.find(x=>x.id===seg));
     if(!t){
       document.title="Team not found | EPS";
-      page.innerHTML='<div class="wrap"><h1 class="tp-title">Team not found</h1><p class="sub">There is no team at this address. It may have been renamed or removed.</p><a class="btn" href="/#teams">See all teams</a></div>';
+      page.innerHTML='<div class="wrap"><h1 class="tp-title">Team not found</h1><p class="sub">There is no team at this address. It may have been renamed or removed.</p><a class="btn" href="/teams">See all teams</a></div>';
       return;
     }
     document.title=`${t.name} | EPS`;
@@ -1021,8 +1112,9 @@ function render(D){
     const mineMatch=x=>x.m.a===t.id||x.m.b===t.id;
     const upcoming=up.filter(mineMatch),results=done.filter(mineMatch);
     page.innerHTML=`<div class="wrap">
-      <p class="tp-back"><a class="tlink" href="/#teams">All teams</a></p>
+      <p class="tp-back"><a class="tlink" href="/teams">All teams</a></p>
       <div class="card team-hero" style="--bar:${esc(t.color||"")}">${teamLogo(t)}<div><h1 class="tp-title">${esc(t.name)}</h1>${who("GM",gms)}${who("AM",ams)}</div></div>
+      ${teamPhoto(t,"tp-photo")}
       <div class="tiles">
         ${tile(played?place:"-",`Place of ${sorted.length}`)}
         ${tile(`${r.sw}-${r.sl}`,"Series won-lost")}
@@ -1040,6 +1132,36 @@ function render(D){
     </div>`;
   }
   if(TEAM_ROUTE)renderTeamPage();
+
+  // ---- home page summary: next matches, latest results, top of the table, latest news, links to every page ----
+  const mini=({m,st})=>{
+    const a=T[m.a],b=T[m.b],d=st.decided,aw=st.wa>=2,bw=st.wb>=2;
+    const when=d?"Final":st.started?"In progress":fmtDate(m.date);
+    const side=(t,w,won)=>`<div class="mm-r${d&&!won?" lose":""}">${badge(t)}<a class="tlink mm-n" href="${teamHref(t)}">${esc(t.name)}</a><b class="mm-s">${st.started?w:""}</b></div>`;
+    return `<div class="mm">${side(a,st.wa,aw)}${side(b,st.wb,bw)}<span class="mm-d">${esc(when)}</span></div>`;
+  };
+  const none=t=>`<p class="none">${t}</p>`;
+  document.getElementById("hbNext").innerHTML=up.slice(0,4).map(mini).join("")||none("No matches scheduled right now.");
+  document.getElementById("hbDone").innerHTML=done.slice(0,4).map(mini).join("")||none("No results yet.");
+  document.getElementById("hbTable").innerHTML=started
+    ?sorted.slice(0,5).map((r,i)=>`<div class="sr"><span class="sr-n">${i+1}</span>${badge(r.t)}<a class="sr-t tlink" href="${teamHref(r.t)}">${esc(r.t.name)}</a><span class="sr-p">${r.pts}<small>PTS</small></span></div>`).join("")
+    :none("The table fills up after the first games.");
+  if(posts.length){
+    document.getElementById("hbNewsCard").hidden=false;
+    document.getElementById("hbNews").innerHTML=posts.slice(0,3).map(n=>`<a class="nn" href="/news"><small>${n.pinned?"Pinned · ":""}${esc(niceDate(n.date))}</small><b>${esc(n.title)}</b><span>${esc(n.body)}</span></a>`).join("");
+  }
+  const explore=[
+    ["/standings","Standings","The table and the playoff places"],
+    ["/matches","Matches","Fixtures and results, round by round"],
+    ["/teams","Teams","Rosters, GMs and every team page"],
+    BR&&["/playoffs","Playoffs","The knockout bracket of the top 8"],
+    ["/leaders","Leaders","Top scorers, assists and goalies"],
+    ["/gallery","Gallery","Photos from the matches"],
+    posts.length&&["/news","News","Announcements from the league"],
+    ["/rules","Rules","How to behave in the league"],
+    ["/staff","Staff","The people who run the EPS"],
+  ].filter(Boolean);
+  document.getElementById("explore").innerHTML=explore.map(([h,t,s])=>`<a class="card xl" href="${h}"><b>${t}</b><span>${s}</span></a>`).join("");
 
   // facts
   countUp(document.getElementById("sTeams"),D.teams.length);

@@ -44,6 +44,19 @@ A match is a series of up to 3 games. First to 2 game wins takes the series.
 2-0 win: winner 3 points, loser 0. 2-1 win: winner 2 points, loser 1.
 Equal points are split by games won, then head-to-head, then series won, then goal difference.
 
+## Pages
+
+Every menu item has its own address: `/news`, `/matches`, `/gallery`, `/standings`, `/playoffs`, `/teams`,
+`/leaders`, `/rules` and `/staff`. Each has its own browser title and Discord/Google link preview.
+The home page (`/`) shows the header, the numbers, the next matches, the latest results, the top of the table,
+the latest news and links to every page.
+
+- All pages are the same `index.html`; it shows the right part based on the address. `server.js` knows the list
+  of addresses (`PAGES`), and a new page needs an entry there too.
+- Old links such as `/#standings` (from before the separate pages) forward to `/standings` by themselves.
+- `/playoffs` shows "Playoffs not started yet" to visitors until the bracket is published. The menu link stays
+  hidden until then.
+
 ## Team pages
 
 Every team has its own page at `yoursite/team/<page-address>`, with place, series and game record, goals for and
@@ -54,6 +67,8 @@ Team names in the standings, fixtures, bracket, leaders and team cards link to i
   default: the team's existing id, or its name for teams added later. It never changes when a team is renamed, so shared
   links keep working. Changing it on purpose breaks links people already shared. Two teams with the same address get
   `-2`. The old id address still works and redirects.
+- **Team photo:** optional picture of the whole team, uploaded in **Admin > Teams** ("Upload team photo"). It shows at
+  the top of the roster when a team card is opened, and under the team name on the team page. Landscape pictures work best.
 - **Link previews:** the server fills in the team name, logo and a short description for Discord and search engines.
 - **Unknown address:** shows a "Team not found" page (HTTP 404).
 - **Playoff data stays private** while the bracket is a draft: the team page, like the rest of the site, only gets what
