@@ -241,13 +241,9 @@ td.pts{font-family:var(--disp);font-weight:800;font-size:24px;color:var(--accent
 .team-logo{width:88px;height:88px;flex:none;object-fit:contain;border-radius:10px}
 .team-logo.ph{display:grid;place-items:center;background:var(--accent);color:var(--on-accent);font-family:var(--disp);font-weight:800;font-size:30px}
 .team-head::after{content:"";width:10px;height:10px;flex:none;align-self:center;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg) translate(-2px,-2px);transition:transform .3s cubic-bezier(.16,1,.3,1)}
-.team-card.open .team-head::after{transform:rotate(225deg) translate(-2px,-2px)}
-.roster-wrap{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s cubic-bezier(.16,1,.3,1)}
-.team-card.open .roster-wrap{grid-template-rows:1fr}
-.roster-wrap > div{overflow:hidden;padding:0 22px}
-.team-card.open .roster-wrap > div{padding-bottom:22px}
-.roster-wrap h4{font-family:var(--body);font-weight:700;font-size:17px;color:var(--ink);margin:6px 0 2px}
-.roster-wrap h4 ~ h4{margin-top:14px}
+.team-head{text-decoration:none}
+.team-head::after{transform:rotate(-45deg)}
+.team-card:hover .team-head::after{transform:rotate(-45deg) translate(3px,3px)}
 .roster{list-style:none}
 .roster li{font-size:16px;line-height:1.8}
 .roster .none{color:var(--muted)}
@@ -997,12 +993,8 @@ function render(D){
   document.getElementById("teamList").innerHTML=D.teams.map(t=>{
     const {n,goalies,skaters,gms,ams}=rosterOf(t);
     const logo=teamLogo(t);
-    return `<article class="card team-card" style="--bar:${esc(t.color||"")}"><button type="button" class="team-head" aria-expanded="false" aria-controls="roster-${esc(t.id)}"><span class="th-main"><strong class="tn">${esc(t.name)}</strong>${who("GM",gms)}${who("AM",ams)}${teamStats(t)}<span class="count">${n.length?`${n.length} players, ${goalies.length} ${goalies.length===1?"goalie":"goalies"}. Tap to show the roster`:"Roster to be announced"}</span></span>${logo}</button><div class="roster-wrap" id="roster-${esc(t.id)}"><div>${teamPhoto(t)}<a class="tlink-btn" href="${teamHref(t)}">Open team page</a><h4>Goalies</h4>${list(goalies)}<h4>Skaters</h4>${list(skaters)}</div></div></article>`}).join("")||'<div class="empty"><b>No teams yet</b>Be the first to register.</div>';
+    return `<article class="card team-card" style="--bar:${esc(t.color||"")}"><a class="team-head" href="${teamHref(t)}"><span class="th-main"><strong class="tn">${esc(t.name)}</strong>${who("GM",gms)}${who("AM",ams)}${teamStats(t)}<span class="count">${n.length?`${n.length} players, ${goalies.length} ${goalies.length===1?"goalie":"goalies"}`:"Roster to be announced"}</span></span>${logo}</a></article>`}).join("")||'<div class="empty"><b>No teams yet</b>Be the first to register.</div>';
 
-  document.querySelectorAll(".team-head").forEach(b=>b.addEventListener("click",()=>{
-    const card=b.closest(".team-card"),open=card.classList.toggle("open");
-    b.setAttribute("aria-expanded",open);
-  }));
 
   // leaders (tabbed)
   const sk=D.players.filter(p=>p.role!=="goalie");

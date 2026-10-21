@@ -5,6 +5,9 @@
       "name": "HC Gladiators",
       "color": "#e0262f",
       "logo": "",
+      "photo": "/uploads/c2fd3390bf77d686.png",
+      "code": "",
+      "slug": "hc-gladiators",
       "gm": "Rejmyzzz",
       "am": "Slappy"
     },
@@ -13,6 +16,9 @@
       "name": "HC Čočkárna",
       "color": "#8a5a1e",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "hc-cockarna",
       "gm": "Chocky乂Lushixus",
       "am": ""
     },
@@ -21,6 +27,9 @@
       "name": "Brno Supporters",
       "color": "#c4161c",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "brno-supporters",
       "gm": "Gulan",
       "am": ""
     },
@@ -29,6 +38,9 @@
       "name": "HC Košice",
       "color": "#f28c1a",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "hc-kosice",
       "gm": "Kubixx",
       "am": ""
     },
@@ -37,6 +49,9 @@
       "name": "HK Bahrein",
       "color": "#9b59b6",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "hk-bahrein",
       "gm": "DANGER!",
       "am": ""
     },
@@ -45,6 +60,9 @@
       "name": "HC Goats",
       "color": "#1f2fc7",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "hc-goats",
       "gm": "Tigersson",
       "am": "MARSCSI THE GOAT"
     },
@@ -53,6 +71,9 @@
       "name": "Shieldmaiden",
       "color": "#6a2c91",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "shieldmaiden",
       "gm": "Laco",
       "am": ""
     },
@@ -61,6 +82,9 @@
       "name": "Rogle BK",
       "color": "#2ecc71",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "rogle-bk",
       "gm": "Lauks",
       "am": ""
     },
@@ -69,6 +93,9 @@
       "name": "Aztec Warriors",
       "color": "#e04a3a",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "aztec-warriors",
       "gm": "Djim",
       "am": "Mjölk"
     },
@@ -77,6 +104,9 @@
       "name": "HC Great Victoria",
       "color": "#1b57c4",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "hc-great-victoria",
       "gm": "skorp",
       "am": "waza"
     },
@@ -85,6 +115,9 @@
       "name": "HC Suits",
       "color": "#1b57c4",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "hc-suits",
       "gm": "Calmik",
       "am": "OsmiKilovaVeka"
     },
@@ -93,6 +126,9 @@
       "name": "HK Servis",
       "color": "#1d5be0",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "hk-servis",
       "gm": "",
       "am": "SGTŠeriF #20"
     },
@@ -101,6 +137,9 @@
       "name": "Bratislava Capitals",
       "color": "#a01216",
       "logo": "/uploads/681dc3a4b46cc417.png",
+      "photo": "",
+      "code": "",
+      "slug": "bratislava-capitals",
       "gm": "TheChosenOne",
       "am": ""
     },
@@ -109,6 +148,9 @@
       "name": "Fantazia",
       "color": "#2447d1",
       "logo": "",
+      "photo": "",
+      "code": "",
+      "slug": "fantazia",
       "gm": "Abyss198",
       "am": "pelko"
     }
@@ -1753,5 +1795,6 @@
     "sf": "7ad4fb69-3aa4-4698-a0d3-0ebc13ebc319",
     "f": "a41fd0a0-eeb6-4951-84a3-97ee9041547e",
     "seeds": []
-  }
+  },
+  "inbox": []
 }
